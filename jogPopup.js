@@ -3,6 +3,7 @@ var tableBody;
 $(document).ready(function() {
   $.pm.bind('logOptions', handleLogOptions);
   $.pm.bind('logRecord', handleLogRecord);
+  $.pm({target: window.opener, type: 'readyMessage', data: {}});
 });
 
 var settings;

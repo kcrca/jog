@@ -1,22 +1,3 @@
-//!! Take this out of the namespace
-// plugin from http://plugins.jquery.com/project/popupready
-jQuery.fn.popupready = function(onready, url, name, features, replace) {
-  var popup = window.open(url, name, features, replace);
-  if (onready) {
-    setTimeout(poll, 10);
-  }
-  function poll() {
-    if (jQuery("body *", popup.document).length == 0) {
-      setTimeout(poll, 10);
-    } else {
-      onready(popup);
-    }
-  }
-
-  return popup;
-};
-jQuery.popupready = jQuery.fn.popupready;
-
 (function($) {
   $.jog = $.fn.jog = function(method) {
     if (!method) {
@@ -178,10 +159,12 @@ jQuery.popupready = jQuery.fn.popupready;
           if (!this.pending) {
             this.pending = [];
             var self = this;
-            $.popupready(function(popup) {
+            var popup;
+            $.pm.bind('readyMessage', function() {
               $.pm({target: popup, type: "logOptions", data: self.settings});
               self.consumePending(popup);
-            }, "jogPopup.html", "Log");
+            });
+            popup = window.open("jogPopup.html", "Log");
           }
           this.pending.push(logRecord);
         }
@@ -286,7 +269,7 @@ jQuery.popupready = jQuery.fn.popupready;
     this.useParentHandlers = function(value) {
       if (value != undefined) this._useParentHandlers = value;
       return this._useParentHandlers;
-    }
+    };
 
     this._ancestors = [];
     (function() {
