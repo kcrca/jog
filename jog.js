@@ -1,20 +1,7 @@
 (function($) {
-  $.jog = $.fn.jog = function(method) {
-    if (!method) {
-      return logObject.jog();
-    }
-
-    var thing = logObject[method];
-    if (thing) {
-      if (typeof(thing) == 'function') {
-        return thing.apply(this, Array.prototype.slice.call(arguments, 1));
-      } else {
-        return thing;
-      }
-    } else {
-      return logObject.jog.apply(this, arguments);
-    }
-  };
+  $.jog = jog;
+  $.jog.levels = levels;
+  $.jog.newHandler = newHandler;
 
   // Make levels actual objects so ==, <=, etc might operate? At least be consistent about if it's a number
   var n = 0;
@@ -29,6 +16,8 @@
     Alert: n++,
     Off: n++
   };
+  $.extend($.jog, levels);
+
   var levelNameToNum = {};
   var levelNumToName = {};
 
@@ -71,7 +60,7 @@
     $(document.body).append(top);
   }
 
-  var definedHandlers = {
+  $.jog.baseHandlers = {
     html: newHandler("html", {
       settings: {
         idPrefix: 'jog',
@@ -232,7 +221,7 @@
   var areaDefaults = new Area('');
   areaDefaults.level(levels.Info);
   areaDefaults.alertLevel(levels.Alert);
-  areaDefaults.addHandlers(definedHandlers.console);
+  areaDefaults.addHandlers(baseHandlers.console);
   areaDefaults.toTimeString = defaultTimeFormat;
 
   function toLevelNum(level) {
@@ -386,13 +375,4 @@
     }
   }
 
-  //noinspection JSUnusedGlobalSymbols
-  var logObject = {
-    jog: jog,
-    levels: levels,
-    baseHandlers: definedHandlers,
-    newHandler: newHandler
-  };
-  // Make the level names part of the exported names
-  $.extend(logObject, levels);
 })(jQuery);

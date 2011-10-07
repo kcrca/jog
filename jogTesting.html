@@ -37,7 +37,7 @@
 
     function createHandlerOptions() {
         var inUse = $.jog().handlers();
-        var handlers = $.jog('baseHandlers');
+        var handlers = $.jog.baseHandlers;
         for (var handlerName in handlers) {
             var handler = handlers[handlerName];
             var checkbox = $('<input type="checkbox"/>');

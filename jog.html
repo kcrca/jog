@@ -34,7 +34,7 @@
    you can configure messages to go into a table on the page, or in a popup
    window, or any place you like:</p>
 
-<pre>$.jog('options').addHandlers($.jog('baseHandlers').popup);</pre>
+<pre>$.jog('options').addHandlers($.jog.baseHandlers.popup);</pre>
 
 <p>This would add a handler for options messages that would put log messages in
    a popup window, as well as on the console.</p>
@@ -156,13 +156,14 @@
 <p>Once a log message has passed the level threshold test, where does it go? The
    answer is that you can configure that.</p>
 
-<p>Handlers are objects that take messages and presents them. The default
-   handler shows messages on the consolve via <code>console.log</code>:</p>
+<p><em>Handlers</em> are objects that take messages and presents them. The
+                     default handler shows messages on the consolve via <code>console.log</code>:
+</p>
 
 <pre>ui - Info - 19:12:12 - The median value is 4.3</pre>
 
-<p>These are the components of the final log message: the area, the level, the
-   current time, and the message.</p>
+<p>These are the components of the displayed log message: the area, level, the
+   current time, and message.</p>
 
 <p>The base handler objects that are provided by jog are:</p>
 
@@ -186,23 +187,23 @@
    solely the console handler. You can access the basic handlers listed above
    this way:</p>
 
-<pre>$.jog('baseHandlers').handlers</pre>
+<pre>$.jog.baseHandlers</pre>
 
 <p>For example, if you want to change the root area's default handler to the
    html handler, you could do this:</p>
-<pre>$.jog().addHandlers($.jog('baseHandlers').html);
-$.jog().removeHandlers($.jog('baseHandlers').console);</pre>
+<pre>$.jog().addHandlers($.jog.baseHandlers.html);
+$.jog().removeHandlers($.jog.baseHandlers.console);</pre>
 
 <p>Or more simply, you could just replace the list of handlers:</p>
 
-<pre>$.jog().handlers($.jog('baseHandlers').html);</pre>
+<pre>$.jog().handlers($.jog.baseHandlers.html);</pre>
 
 <p>You can configure these handler objects via their <code>config()</code>
    methods, which take property objects. For example, the <code>html</code>
    handler can be told the ID of the HTML element inside which the log should be
    placed:</p>
 
-<pre>$.jog('baseHandlers').html.config({htmlId: 'putTheLogHere'});</pre>
+<pre>$.jog.baseHandlers.html.config({htmlId: 'putTheLogHere'});</pre>
 
 <p>Here are the base handlers and their configurable values:</p>
 
@@ -325,7 +326,7 @@ $.jog().removeHandlers($.jog('baseHandlers').console);</pre>
    display as an alert. If the handler supports this feature, it will perform an
    appropriate action.</p>
 
-<pre>$.jog(ui).alert('Cannot store user preferences');</pre>
+<pre>$.jog('ui').alert('Cannot store user preferences');</pre>
 
 <p>The only base handler that supports alerts is the <code>console</code>
    handler, which will display the log message via an <code>alert()</code>.</p>
@@ -333,11 +334,11 @@ $.jog().removeHandlers($.jog('baseHandlers').console);</pre>
 <p>You can change the alert level for an area like you can the regular threshold
    level:</p>
 
-<pre>$.jog(ui).alertLevel($.jog.Severe);</pre>
+<pre>$.jog('ui').alertLevel($.jog.Severe);</pre>
 
 <p>And you can use the level also to turn them off:</p>
 
-<pre>$.jog(ui).alertLevel($.jog.Off);</pre>
+<pre>$.jog('ui').alertLevel($.jog.Off);</pre>
 
 <h3>Advanced Topic: Custom Handlers</h3>
 
