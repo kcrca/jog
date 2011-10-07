@@ -53,6 +53,7 @@
     <ui_properties />
   </component>
   <component name="DependencyValidationManager">
+    <scope name="Jog Sources" pattern="(file:*||file:*)&amp;&amp;!file:.gitignore&amp;&amp;!file:jog.iml&amp;&amp;!file:jquery-1.6.4.js" />
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
   <component name="IdProvider" IDEtalkID="8F91E573583D5C2A6877BBD6F5FB948C" />
