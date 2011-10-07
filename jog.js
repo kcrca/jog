@@ -60,7 +60,7 @@
     $(document.body).append(top);
   }
 
-  $.jog.baseHandlers = {
+  var baseHandlers = {
     html: newHandler("html", {
       settings: {
         idPrefix: 'jog',
@@ -194,6 +194,7 @@
       }
     })
   };
+  $.jog.baseHandlers = baseHandlers;
 
   function messageText(message) {
     // If it's HTML, extract the text part
