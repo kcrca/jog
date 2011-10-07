@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Logging Test</title>
+
+    <script type="text/javascript" src="../jquery.js"></script>
+    <script type="text/javascript" src="../postmessage/postmessage.js"></script>
+    <script type="text/javascript" src="jog.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="jog.css"/>
+</head>
+<body>
+
+<form name="writeLog" action="#" onsubmit="noSubmit()">
+    <input type="button" id="levelButton" value="Level"/>
+    <label for="areaText">Area:</label>
+    <input type="text" id="areaText" value="Ohio"/>
+    <label for="levelSelect">Level:</label>
+    <select id="levelSelect">
+        <option>undefined</option>
+    </select>
+    <label for="messageText">Message:</label>
+    <input type="text" id="messageText" value="Read <i>Me!</i>"/>
+    <input type="button" id="logButton" value="Log"/>
+    <input type="checkbox" id="byNameButton"/>
+    <label for="byNameButton">Use level-named methods
+    </label>
+
+    <p> Handlers: <span id='handlers'></span>
+</form>
+
+<script type="text/javascript">
+    function noSubmit() {
+        return false;
+    }
+
+    function createHandlerOptions() {
+        var inUse = $.jog().handlers();
+        var handlers = $.jog('baseHandlers');
+        for (var handlerName in handlers) {
+            var handler = handlers[handlerName];
+            var checkbox = $('<input type="checkbox"/>');
+            var id = handlerName + 'Opt';
+            checkbox.attr('id', id);
+            checkbox.attr('name', handlerName);
+            checkbox.attr('checked', inUse.indexOf(handler) >= 0);
+            checkbox.change(handlerCheckboxChanged);
+            var label = $('<label/>').attr('for', id).text(handlerName);
+            $('#handlers').append(checkbox).append(label);
+        }
+    }
+
+    function handlerCheckboxChanged(evt) {
+        var checkbox = $(evt.target);
+        var name = checkbox.attr('name');
+        var handler = $.jog('baseHandlers')[name];
+        if (checkbox.is(':checked')) {
+            $.jog().addHandlers(handler);
+        } else {
+            $.jog().removeHandlers(handler);
+        }
+    }
+
+    function createLevelSelect() {
+        var levelSelect = $('#levelSelect');
+        var defaults = $.jog();
+        var defaultLevelName = defaults.level();
+        var levels = $.jog('levels');
+        for (var levelName in levels) {
+            var opt = $('<option>' + levelName + '</option>');
+            levelSelect.append(opt);
+            if (levelName == defaultLevelName) {
+                opt.attr('selected', 'selected');
+            }
+        }
+    }
+
+    function readLogLevel() {
+        return $('#levelSelect option:selected').val();
+    }
+
+    function readArea() {
+        return $('#areaText').val();
+    }
+    function doLog() {
+        var area = readArea();
+        var level = readLogLevel();
+        var message = $('#messageText').val();
+        if ($('#byNameButton').is(':checked')) {
+            var functionName = level.toLowerCase();
+            $.jog(area)[functionName](message);
+        } else {
+            $.jog(area).log(level, message);
+        }
+    }
+
+    function doLevel() {
+        var area = $('#areaText').val();
+        var level = readLogLevel();
+        var message = $('#messageText').val();
+        $.jog(area).level(level);
+    }
+
+    $(document).ready(function() {
+        createHandlerOptions();
+        createLevelSelect();
+        $('#logButton').click(doLog);
+        $('#levelButton').click(doLevel);
+    });
+</script>
+
+<div id='jog-html' style='border: 10px solid lightBlue;'>
+</div>
+
+</body>
+</html>

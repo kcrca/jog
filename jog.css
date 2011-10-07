@@ -1,0 +1,31 @@
+#jog-table {
+    border: 1px;
+    border-collapse: collapse;
+}
+
+#jog-table td, #jog-table th {
+    border-bottom: 1px;
+    border-style: solid;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    vertical-align: baseline;
+    text-align: left;
+}
+
+#jog-table tr.jog-level-Severe > td {
+    background: #ff9999;
+}
+
+#jog-table tr.jog-level-Severe > td.jog-message {
+    background: inherit;
+}
+
+#jog-table tr.jog-level-Warning > td,
+#jog-table tr.jog-level-Config > td {
+    background: #ffcc99;
+}
+
+#jog-table tr.jog-level-Warning > td.jog-message,
+#jog-table tr.jog-level-Config > td.jog-message {
+    background: inherit;
+}

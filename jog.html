@@ -1,0 +1,371 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+    <title>jog</title>
+    <meta name="generator" content="Amaya, see http://www.w3.org/Amaya/">
+</head>
+
+<body>
+<h2>JOG: Javascript Logging Package</h2>
+
+<h3>Quick Start</h3>
+
+<p>The jog package is a logging package for Javascript and JQuery, designed to
+   be used for client-side application logging, in the manner of Java packages
+   such as log4j or java.util.logging. Using jog usually is as simple as
+   this:</p>
+
+<pre>$.jog('options', $.jog.Info, 'Reading user option settings');</pre>
+
+<p>This creates an informational-level log message for the "options" area of
+   your code to indicate you were, well, reading the user option settings.</p>
+
+<p>"Info" is just one of several levels, ranging from "Fine" (for very
+   fine-grained debug logging) to "Alert" for messages that should be signaled
+   even to non-developers. You can configure what level of messages you are
+   interested in generally, and for specific areas of your code. If you were
+   currently debugging the options area of your code you could:</p>
+
+<pre>$.jog('options').level($.jog.Debug);</pre>
+
+<p>By default this will put informational-level log messages on the console, but
+   you can configure messages to go into a table on the page, or in a popup
+   window, or any place you like:</p>
+
+<pre>$.jog('options').addHandlers($.jog('baseHandlers').popup);</pre>
+
+<p>This would add a handler for options messages that would put log messages in
+   a popup window, as well as on the console.</p>
+
+<h3>The Basics: Areas and Levels</h3>
+
+<p>When developing and debugging software you often want to track values or
+   which code is executing. Sometimes these are worth holding on to for the next
+   time you have problems in that same code. Logging is a common way to do this:
+   Instead of simple print statements, you put in conditional print statements
+   that can be turned on and off as needed. In Java, the
+    <code>java.util.logging</code> package and the log4j package provide these
+   tools. Other languages have similar tools. The jog package is designed to do
+   this for Javascript/JQuery using terms and approaches that are already
+   familiar to developers.</p>
+
+<p>Each log messages applies to some area of code, so the basic organizing block
+   of jog is the <span style="font-style: italic;">area.</span> When you write a
+   log statement, you start by specifying the area to jog:</p>
+
+<pre>$.jog(<span style="font-style: italic;">areaName</span>)</pre>
+
+<p>The jog function returns an object that manages logging in that area. The
+   primary operation on that object is to write log messages:</p>
+
+<pre>$.jog(<span style="font-style: italic;">areaName</span>).log(<span
+        style="font-style: italic;">level</span>, <span
+        style="font-style: italic;">message</span>)</pre>
+
+<p>Each area has a <span style="font-style: italic;">level</span> at which it is
+   allowing messages to be displayed. Messages at that level or above are
+   displayed; messages below it are silently ignored. The levels are
+    <code>Fine</code>, <code>Debug</code>, <code>Info</code>,
+    <code>Config</code>, <code>Warning</code>, <code>Severe</code>,
+    <code>Alert</code>, and <code>Off</code>. The default logging threshold
+   level for all areas if <code>Info</code>. The level constants are obtained
+   directly from jog. For example, the constant for debug level messages is
+    <code>$.jog.Debug</code>.</p>
+
+<p>You can also specify the message level by invoking the appropriately-named
+   method on the area object, such as:</p>
+
+<pre>$.jog('options').info('Reading user option settings');</pre>
+
+<p>Generally this form is easier to read and takes less space, but you might
+   sometimes need the level-specifying <code>log()</code> function when you are
+   writing code where the level must come from a variable.</p>
+
+<p>Areas can have sub-areas. This is a good way to isolate your log messages
+   from other people's code, and to break up your own log messages into logical
+   groupings. You might, for example, be writing an application that has a UI,
+   various local computation, and communication with a remote server. If this is
+   a simple application you might only need three areas.</p>
+
+<p>But if the UI, for example, had a separate user preferences area, you might
+   want to have "ui.main" and "ui.prefs". Which in fact defines three areas:
+   "ui.main", "ui.prefs", and their common parent area "ui". You can turn on
+   debug messages for both by setting them on the parent:</p>
+
+<pre>$.jog('ui').level($.jog.Debug);</pre>
+
+<p>If a threshold level isn't set on an area, it will use it's parent's value.
+   And at the top there is a root area which is unnamed, and has the overall
+   defaults. The root area is where the default level of <code>Info</code> is
+   set. For example, this would set the overall log level to <code>Debug</code>:
+</p>
+
+<pre>$.jog().level($.jog.Debug);</pre>
+
+<p>The settings used for an area will be the most specific to that area. In
+   other words, when looking for a threshold level for <code>ui.prefs</code>,
+   the area ui.prefs is looked at for a level setting. If there isn't one, the
+    <code>ui</code> area is checked. Finally, the root level is checked if no
+   intervening area has a setting.</p>
+
+<p>If you want to print out more than a basic log message, you may want to first
+   check to see if the resulting message would be visible. For example, if
+   calculating the values to show is expensive, there is no reason to do that if
+   the log message will just get filtered out. You can do this by omitting a
+   message:</p>
+<pre>if ($.jog('ui').log($.jog.Debug)) {
+    // ... calculate median value ...
+    $.jog('ui').log($.jog.Debug, 'The median value is ' + median);
+}</pre>
+
+<p>You can hold on to area objects so you don't have to keep looking them up.
+   This further reduces the overhead of using log messages because the lookup is
+   done only once. If your UI code is split into one file, for example, you
+   could have this near the top:</p>
+
+<pre>var uiLogger = $.jog('ui');</pre>
+
+<p>Then later on in the code you can use uiLogger instead of looking up the
+   logger:</p>
+<pre>if (uiLogger.log($.jog.Debug)) {
+    // ... calculate median value ...
+    uiLogger.log($.jog.Debug, 'The median value is ' + median);
+}</pre>
+
+<p>If you want an area to stop enforcing a threshold, you can take it away by
+   using a level of <code>undefined</code>. Then it will once again delegate the
+   threshold choice to an area above it.</p>
+
+<pre>$.jog('ui.prefs').level(undefined);</pre>
+
+<p>The level named <code>Off</code> is the highest level, intended to be used
+   only as a threshold level. Therefore it is not a valid level for a log
+   message. A log at the <code>Off</code> level is never shown.</p>
+
+<p>The object $.jog.levels has the levels -- and only the levels -- as its
+   properties. The level names are usually accessed through <code>$.jog</code>
+   itself (<code>$.jog.Fine</code>) instead of this object (<code>$.jog.levels.Fine</code>)
+   It is a way you can loop through the levels:</p>
+
+<pre>for (var logLevel in $.jog.levels) { ... }</pre>
+
+<h3>Basic Output: Handlers</h3>
+
+<p>Once a log message has passed the level threshold test, where does it go? The
+   answer is that you can configure that.</p>
+
+<p>Handlers are objects that take messages and presents them. The default
+   handler shows messages on the consolve via <code>console.log</code>:</p>
+
+<pre>ui - Info - 19:12:12 - The median value is 4.3</pre>
+
+<p>These are the components of the final log message: the area, the level, the
+   current time, and the message.</p>
+
+<p>The base handler objects that are provided by jog are:</p>
+
+<dl>
+    <dt>console</dt>
+    <dd>Writes messages to <code>console.log</code>.</dd>
+    <dt>html</dt>
+    <dd>Writes messages to table on the current page.</dd>
+    <dt>popup</dt>
+    <dd>Pops up a new window and writes messages to table on that page.</dd>
+</dl>
+
+<p>When a log message should be displayed, the area defines which handlers will
+   be used. In most cases the handlers for an area is the union of all the
+   handlers in itself and its parents, including the root. (It is possible to
+   mark an area as not inheriting handlers from its parents, though that is
+   uncommon.) The handlers are asked (in any order) to do their job.</p>
+
+<p>Again, the root area is the place where the defaults are. In this case, the
+   set of handlers at the root is what is used by most areas, and its default is
+   solely the console handler. You can access the basic handlers listed above
+   this way:</p>
+
+<pre>$.jog('baseHandlers').handlers</pre>
+
+<p>For example, if you want to change the root area's default handler to the
+   html handler, you could do this:</p>
+<pre>$.jog().addHandlers($.jog('baseHandlers').html);
+$.jog().removeHandlers($.jog('baseHandlers').console);</pre>
+
+<p>Or more simply, you could just replace the list of handlers:</p>
+
+<pre>$.jog().handlers($.jog('baseHandlers').html);</pre>
+
+<p>You can configure these handler objects via their <code>config()</code>
+   methods, which take property objects. For example, the <code>html</code>
+   handler can be told the ID of the HTML element inside which the log should be
+   placed:</p>
+
+<pre>$.jog('baseHandlers').html.config({htmlId: 'putTheLogHere'});</pre>
+
+<p>Here are the base handlers and their configurable values:</p>
+
+<dl>
+    <dt><code>console</code></dt>
+    <dd>Each log message is printed on the console using
+        <code>console.log()</code>.
+    </dd>
+    <dd>
+        <dl>
+            <dt><code>prefix</code></dt>
+            <dd>A prefix that will be added to every log message on the console.
+                This could help you find jog's log messages amidst other consol
+                log message. The default is <code>""</code>.
+            </dd>
+            <dt><code>separator</code></dt>
+            <dd>The separator between elements in log messages. The default is
+                <code>" - "</code>.
+            </dd>
+        </dl>
+    </dd>
+    <dt><code>html</code></dt>
+    <dd>Each message is appended to a table on the current page. By default,
+        when the first log message passes the level filter and is to be
+        displayed, it will look for an HTML node with a give ID, and append the
+        table inside it.
+    </dd>
+    <dd>
+        <dl>
+            <dt><code>idPrefix</code></dt>
+            <dd>A prefix applied to the identifiers of HTML elements in the
+                generated table of log messages. The default is
+                <code>"jog"</code>, so the ID of the table itself is <code>jog-table</code>
+                and the header row's id is <code>jog-header</code>.
+            </dd>
+            <dt><code>classPrefix</code></dt>
+            <dd>A prefix applied to the class names of HTML elements in the
+                generated table of log messages. The default is
+                <code>"jog"</code>, so the ID of the table itself is <code>jog-table</code>,
+                and the header row's id is <code>jog-header</code> (yes, the
+                same as the ID's). The cells of the columns also have classes:
+                <code>jog-area</code> for the area names; <code>jog-level</code>
+                for the levels; <code>jog-when</code> for the times; and <code>jog-message</code>
+                for the actual messages. In addition, each row has two classes:
+                <code>jog-level-</code><em>levelName<code></code></em> and
+                <code>jog-area-</code><em>areaName</em> for the level and area
+                of the individual log. For example, in an Info message in the ui
+                area, they would be <code>log-level-Info</code> and <code>log-area-ui</code>.
+            </dd>
+            <dt><code>htmlId</code></dt>
+            <dd>The ID of the node which will contain the log table, which will
+                be created if it doesn't exist. When the first message is to be
+                displayed, the handler will first look for a node with that ID.
+                If it finds one, the table will be appended to that node. If it
+                does not, it will create a blank <code>&lt;div&gt;</code> with
+                this ID. This will be appended to the end of the page (but see
+                <code>insertHtml</code> below). The default value is generated
+                using <code>idPrefix</code>, so the default if
+                <code>idPrefix</code> is untouched is <code>jog-html</code>.
+            </dd>
+            <dt><code>insertHtml</code></dt>
+            <dd>The ID of the node which will contain the log table, which will
+                be created if it doesn't exist. When the first message is to be
+                displayed, the handler will first look for a node with that ID.
+                If it finds one, the table will be appended to that node. If it
+                does not, it will create a blank <code>&lt;div&gt;</code> with
+                this ID. This will be appended to the end of the page (but see
+                <code>insertHtml</code> below). The default value is generated
+                using <code>idPrefix</code>, so the default if
+                <code>idPrefix</code> is untouched is <code>jog-html</code>.
+            </dd>
+        </dl>
+    </dd>
+    <dt><code>popup</code></dt>
+    <dd>A new browser window will be popped up, and inside that window, messages
+        will be shown in a table in that window using an html handler (with a
+        default configuration).
+    </dd>
+    <dd>
+        <dl>
+            <dt><code>title</code></dt>
+            <dd>The title of the window. The default is <code>"Log
+                                                              Messages"</code>.
+            </dd>
+            <dt><code>css</code></dt>
+            <dd>The CSS to use for the page in the window. It can a path name of
+                a css file, in which case it will be used in a <code>&lt;style&gt;</code>
+                block in the window's header. Or it can be a chunk of HTML
+                itself, in which case it will replace that <code>
+                    &lt;style&gt;</code> node in the header. The default is
+                <code>"jog.css"</code>, which is provided as a file with this
+                package.
+            </dd>
+        </dl>
+    </dd>
+</dl>
+
+<h3>Advanced Topic: Time Formatting</h3>
+
+<p>An area can also define the format of the time value. By default this is
+   formatted using the <code>Date</code> object's
+    <code>toLocaleTimeString()</code> method. You can override this by setting
+   the <code>timeFormat</code> function in the area's object. Like the threshold
+   level, this will be inherited by sub-areas that don't themselves override it.
+   And again, like the threshold level, the default behavior is defined at the
+   root area, and can be overridden there:</p>
+
+<pre>$.jog().timeFormat = function(when) { ... }</pre>
+
+<p>The when parameter is a <code>Date</code> object whose time is to be
+   formatted.</p>
+
+<h3>Advanced Topic: Alerts</h3>
+
+<p>Some messages are so critical that you want to make sure they are more
+   forcefully thrust upon the user. This is the purpose of the Alert log level.
+   This is a second threshold of an area -- the level at which messages will be
+   displayed as alerts. Any log at this level or above will be logged not only
+   as a regular log message but also will be given to each active handler to
+   display as an alert. If the handler supports this feature, it will perform an
+   appropriate action.</p>
+
+<pre>$.jog(ui).alert('Cannot store user preferences');</pre>
+
+<p>The only base handler that supports alerts is the <code>console</code>
+   handler, which will display the log message via an <code>alert()</code>.</p>
+
+<p>You can change the alert level for an area like you can the regular threshold
+   level:</p>
+
+<pre>$.jog(ui).alertLevel($.jog.Severe);</pre>
+
+<p>And you can use the level also to turn them off:</p>
+
+<pre>$.jog(ui).alertLevel($.jog.Off);</pre>
+
+<h3>Advanced Topic: Custom Handlers</h3>
+
+<p>You can write your own handlers. The <code>newHandler()</code> function is
+   core to doing it:</p>
+<pre>var myHandler = $.jog.newHandler(name, {
+    publish: function(area, levelNum, level, when, message) { ... }
+});</pre>
+
+<p>The <code>newHandler()</code> method creates a new handler object with the
+   given name, and then copies the properties of the second parameter to this
+   object. Each handler has a <code>name</code> field, a <code>config()</code>
+   method to set properties, stored in a <code>settings</code> field, that can
+   be used by the <code>publish()</code> and other methods.</p>
+
+<p>The name is required, but need not be unique. Each handler is assigned a
+   unique ID that is returned by its <code>toString()</code> method. This is
+   used internally to merge the set of handlers from each area, its parents, and
+   the root. You should not modify the id or the <code>toString()</code> method.
+</p>
+
+<p>The <code>publish()</code> method is what is called by <code>log()</code>,
+   and is required of all handlers. The parameters are those from the <code>log()</code>
+   call, with <code>when</code> being the string version of the time,
+   appropriately formatted.</p>
+
+<p>If you want your handler to also provide alerts, it should also support an
+    <code>alert()</code> method that takes the same parameters as <code>publish()</code>.
+</p>
+</body>
+</html>
