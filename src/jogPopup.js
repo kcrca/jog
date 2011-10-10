@@ -25,16 +25,12 @@
 var _settings;
 
 $(document).ready(function() {
-  console.log('bid logOptions');
   $.pm.bind('logOptions.jog', handleLogOptions);
-  console.log('bid logRecord');
   $.pm.bind('logRecord.jog', handleLogRecord);
-  console.log('send readyMessage');
   $.pm({target: window.opener, type: 'readyMessage.jog', data: {}});
 });
 
 function handleLogOptions(data) {
-  console.log('got logOptions');
   var merged = $.extend({}, _settings, data.settings);
   for (var key in merged) {
     if (_settings[key] != merged[key]) {
@@ -46,7 +42,6 @@ function handleLogOptions(data) {
 }
 
 function handleLogRecord(data) {
-  console.log('got logRecord');
   $.jog.baseHandlers.html.publish(data.area, data.levelNum, data.level,
       data.when, data.message);
 }

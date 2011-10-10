@@ -76,6 +76,17 @@
 
   $.jog.newHandler = newHandler;
 
+  // The popup handler needs the location of this jog.js file so it can find the
+  // companion logPopup.html file. The following code is borrowed from
+  // http://stackoverflow.com/questions/984510/what-is-my-script-src-url/3865126#3865126
+  var scriptDir= (function() {
+    var scripts = document.getElementsByTagName('script'),
+        script = scripts[scripts.length - 1];
+
+    return script.getAttribute('src', 2).replace(/\/+[^/]*\/*$/, '/');
+    //this works in all browser even in FF/Chrome/Safari
+  }());
+
   // The function used by default to insert a container for the log table
   function defaultInsertHtml() {
     var top = $('<div/>');
@@ -199,7 +210,7 @@
               self._consumePending();
             });
             // Now that we're ready to receive the 'ready' message, pop it up
-            popup = window.open("jogPopup.html", "Log");
+            popup = window.open(scriptDir + "jogPopup.html", "Log");
           }
           // Put the log message in the pending queue until the popup is ready
           this._pending.push(logRecord);
@@ -255,7 +266,8 @@
         if (!method || !console[method]) {
           method = "log";
         }
-        console[method](prefix + area + sep + level + sep + when + sep + message);
+        console[method](prefix + area + sep + level + sep + when + sep +
+            message);
       },
       alert: function(area, levelNum, level, when, message) {
         message = messageText(message);
@@ -504,7 +516,7 @@
       var levelNum = levelNameToNum[levelName];
       this[functionName] = levelNameFunction(levelNum);
     }
-    
+
     this.destroy = function() {
       for (var i = 0; i < this._handlers.length; i++) {
         var handler = this._handlers[i];
