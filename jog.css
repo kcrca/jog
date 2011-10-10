@@ -22,11 +22,13 @@
  * THE SOFTWARE.
  */
 
+/* The table that contains the log messages */
 #jog-table {
     border: 1px;
     border-collapse: collapse;
 }
 
+/* Put a border below each log header and entry row */
 #jog-table td, #jog-table th {
     border-bottom: 1px;
     border-style: solid;
@@ -36,19 +38,23 @@
     text-align: left;
 }
 
+/* A light-red background for Severe log rows ... */
 #jog-table tr.jog-level-Severe > td {
     background: #ff9999;
 }
 
+/* ... except for the message itself (it makes it easier to read the message) */
 #jog-table tr.jog-level-Severe > td.jog-message {
     background: inherit;
 }
 
+/* A light-orange background for Warning and Config rows ... */
 #jog-table tr.jog-level-Warning > td,
 #jog-table tr.jog-level-Config > td {
     background: #ffcc99;
 }
 
+/* ... except for the message itself */
 #jog-table tr.jog-level-Warning > td.jog-message,
 #jog-table tr.jog-level-Config > td.jog-message {
     background: inherit;

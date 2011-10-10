@@ -30,21 +30,21 @@ $(document).ready(function() {
   $.pm({target: window.opener, type: 'readyMessage', data: {}});
 });
 
-var settings;
+var _settings;
 
 function handleLogOptions(data) {
-  var merged = $.extend(settings, data.settings);
+  var merged = $.extend(_settings, data.settings);
   for (var key in merged) {
-    if (settings[key] != data.settings[key]) {
+    if (_settings[key] != data.settings[key]) {
       updateSetting(data.settings, key);
     }
   }
   // store a copy of the settings
-  settings = $.extend({}, data.settings);
+  _settings = $.extend({}, data.settings);
 }
 
 function handleLogRecord(data) {
-  $.jog('baseHandlers').html.publish(data.area, data.levelNum, data.level,
+  $.jog.baseHandlers.html.publish(data.area, data.levelNum, data.level,
       data.when, data.message);
 }
 

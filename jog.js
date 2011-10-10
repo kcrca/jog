@@ -24,10 +24,8 @@
 
 (function($) {
   $.jog = jog;
-  $.jog.levels = levels;
-  $.jog.newHandler = newHandler;
 
-  // Make levels actual objects so ==, <=, etc might operate? At least be consistent about if it's a number
+  //!! Make levels actual objects so ==, <=, etc might operate?
   var n = 0;
   //noinspection JSUnusedGlobalSymbols
   var levels = {
@@ -41,34 +39,30 @@
     Off: n++
   };
   $.extend($.jog, levels);
+  $.jog.levels = levels;
 
   var levelNameToNum = {};
   var levelNumToName = {};
 
-  var handlerNum = 0;
-
+  /**
+   * The handler base class. Takes care of the config() method and settings
+   * field.
+   */
   function Handler(name) {
     this.name = name;
 
-    var timePart = new Date().getTime();
-    var randomPart = Math.random().toString(25);
-    this._id = name + ':' + timePart + ':' + randomPart + ':' + handlerNum++;
-
+    // The method that modifies the configuration fields 
     this.config = function(properties, override) {
       override = override != undefined ? override : false;
-      if (!this.settings) {
-        this.settings = {};
+      if (!this._settings) {
+        this._settings = {};
       }
       if (override) {
-        this.settings = $.extend({}, properties);
+        this._settings = $.extend({}, properties);
       } else {
-        $.extend(this.settings, properties);
+        $.extend(this._settings, properties);
       }
     };
-
-    this.toString = function() {
-      return this._id;
-    }
   }
 
   function newHandler(name, properties) {
@@ -80,27 +74,26 @@
     return handler;
   }
 
-  function defaultInsertHtml(top) {
+  $.jog.newHandler = newHandler;
+
+  // The function used by default to insert a container for the log table
+  function defaultInsertHtml() {
+    var top = $('<div/>');
     $(document.body).append(top);
+    return top;
   }
 
   var baseHandlers = {
     html: newHandler("html", {
-      settings: {
+      _settings: {
         idPrefix: 'jog',
         classPrefix: 'jog',
-        htmlId: 'jog-html',
+        htmlId: undefined, // by default this is generated from idPrefix
         insertHtml: defaultInsertHtml
       },
-      idPrefix: function (props) {
-        return (props ? props : this.settings).idPrefix;
-      },
-      classPrefix: function (props) {
-        return (props ? props : this.settings).classPrefix;
-      },
       publish: function(area, levelNum, level, when, message) {
-        this.ensureHtml();
-        var clsPrefix = this.classPrefix();
+        this.ensureTable();
+        var clsPrefix = this._settings.classPrefix;
 
         var levelClass = clsPrefix + '-level-' + level;
         var areaClass = clsPrefix + '-area-' + area;
@@ -111,29 +104,33 @@
         row.append($('<td class="' + clsPrefix + '-message"/>').html(message));
         this.tableBody.append(row);
       },
-      ensureHtml: function() {
+      // Ensure that the table exists, adding it if needed
+      ensureTable: function() {
         if (this.tableBody) return this.tableBody;
 
-        var top;
-        var htmlId = this.settings.htmlId;
-        if (!htmlId || (htmlId == 'jog-html' && idPrefix != 'jog')) {
+        var htmlId = this._settings.htmlId;
+        if (!htmlId) {
           htmlId = idPrefix + '-html';
-          this.settings.htmlId = htmlId;
         }
-        top = $('#' + htmlId);
+
+        // If the top does not exist, create it and add it
+        var top = $('#' + htmlId);
         if (!top || top.length == 0) {
-          top = setup($('<div/>'), 'html');
+          top = this._settings.insertHtml();
+          if (top) {
+            top = $(top); // make sure it's JQuery-able
+          }
+          if (!top || top.length == 0) {
+            throw "insertHtml for '" + htmlId + "' returns no node";
+          }
           top.attr('id', htmlId);
-          this.settings.insertHtml(top);
-        }
-        // Check to make sure we have someplace to put this thing
-        if ($('#' + htmlId).length == 0) {
-          return;
+          top.addClass(this._settings.classPrefix + "-html");
         }
 
-        var idPrefix = this.idPrefix();
-        var classPrefix = this.classPrefix();
+        var idPrefix = this._settings.idPrefix;
+        var classPrefix = this._settings.classPrefix;
 
+        // common code for some nodes
         function setup(node, suffix) {
           node.addClass(classPrefix + '-' + suffix);
           node.attr('id', idPrefix + '-' + suffix);
@@ -153,11 +150,12 @@
       }
     }),
     popup: newHandler("popup", {
-      settings: {
+      _settings: {
         title: 'Log Messages',
         css: 'jog.css'
       },
       publish: function(area, levelNum, level, when, message) {
+        // The message record for sending logs to the popup window
         var logRecord = {
           area: area,
           levelNum: levelNum,
@@ -166,19 +164,28 @@
           message: message
         };
 
+        // If the window is already up and ready, send it the new log
         if (this.windowReady) {
           this.sendLog(logRecord);
         } else {
+          // If the "pending" list doesn't exist, this is the first log, so
+          // we want to get the popup window started. this.pending holds all log
+          // messages that arrive before the popup window is ready to take them.
           if (!this.pending) {
             this.pending = [];
             var self = this;
             var popup;
+            // Listen for 'readyMessage' event the popup uses to say it's ready
             $.pm.bind('readyMessage', function() {
-              $.pm({target: popup, type: "logOptions", data: self.settings});
+              // When the popup has said it's ready, send the settings ...
+              $.pm({target: popup, type: "logOptions", data: self._settings});
+              // ... and then send all pending messages
               self.consumePending(popup);
             });
+            // Now that we're ready to receive the 'ready' message, pop it up
             popup = window.open("jogPopup.html", "Log");
           }
+          // Put the log message in the pending queue until the popup is ready
           this.pending.push(logRecord);
         }
       },
@@ -191,6 +198,7 @@
         }
       },
       sendLog: function(logRecord) {
+        // send a log message to the popup for it to display
         $.pm({
           target: this.popup,
           type: "logRecord",
@@ -199,16 +207,16 @@
       }
     }),
     console: newHandler("console", {
-      settings: {
+      _settings: {
         prefix: '',
         separator: ' - '
       },
       publish: function(area, levelNum, level, when, message) {
-        var prefix = this.prefix;
+        var prefix = this._settings.prefix;
         if (!prefix) prefix = '';
         if (prefix.length > 0) prefix += ':';
         message = messageText(message);
-        var sep = this.separator;
+        var sep = this._settings.separator;
         console.log(prefix + area + sep + level + sep + when + sep + message);
       },
       alert: function(area, levelNum, level, when, message) {
@@ -220,15 +228,18 @@
   };
   $.jog.baseHandlers = baseHandlers;
 
+  // Convert a message to just its text
   function messageText(message) {
     // If it's HTML, extract the text part
     return $('<span>' + message + '</span>').text();
   }
 
+  // The default time format
   function defaultTimeFormat(when) {
     return when.toLocaleTimeString();
   }
 
+  // Create the name-to-number and number-to-name maps
   for (var levelName in levels) {
     var levelNum = levels[levelName];
 
@@ -242,16 +253,19 @@
     levelNameToNum[ch.toLowerCase()] = levelNum;
   }
 
+  // Set up the root of all areas, and thereby the default area settings
   var areas = {};
-  var areaDefaults = new Area('');
-  areaDefaults.level(levels.Info);
-  areaDefaults.alertLevel(levels.Alert);
-  areaDefaults.addHandlers(baseHandlers.console);
-  areaDefaults.toTimeString = defaultTimeFormat;
+  var areaRoot = new Area('');
+  areaRoot.level(levels.Info);
+  areaRoot.alertLevel(levels.Alert);
+  areaRoot.addHandlers(baseHandlers.console);
+  areaRoot.toTimeString = defaultTimeFormat;
 
+  // Reliably convert any string or number to its level number, if it has one
   function toLevelNum(level) {
     if (level == undefined) return undefined;
     if (typeof(level) == 'string') {
+      // See if it's "12"
       var num = parseInt(level);
       if (!isNaN(num)) {
         return num;
@@ -261,9 +275,10 @@
     return level;
   }
 
+  // Return the object that represents an area
   function jog(area) {
     if (!area)
-      return areaDefaults;
+      return areaRoot;
 
     var areaInfo = areas[area];
     if (!areaInfo) {
@@ -273,51 +288,118 @@
     return areaInfo;
   }
 
+  // Merge a second array of values into the first, eliminating duplicate
+  // objects (as opposed to duplicate values, which would be done by
+  // $.extend()).
+  //
+  // There seems to be no easy way to filter out unique//identities*, which
+  // have the property of equality but not of order (you can test if x === y,
+  // but there is no equivalent of <, <=, etc. that deals with identity). So the
+  // usual unique-ing algorithm of "first sort, then eliminate successive
+  // duplicates" doesn't work because you can't sort them. So we have to do the
+  // merge linearly. Luckily the list of handlers usually has no more than a
+  // few members, so this shouldn't explode.
+  function addUnique(target, array) {
+    nextArrayValue:
+        for (var i = 0; i < array.length; i++) {
+          var value = array[i];
+          for (var j = 0; j < target.length; j++) {
+            if (value === target[j]) {
+              continue nextArrayValue;
+            }
+          }
+          target.push(value);
+        }
+  }
+
+  // Removes elements from an array by identity; see addUnique()
+  function removeUnique(target, array) {
+    for (var i = 0; i < array.length; i++) {
+      var value = array[i];
+      for (var j = 0; j < target.length; j++) {
+        if (value === target[j]) {
+          target.splice(j, 1);
+          break;
+        }
+      }
+    }
+  }
+
+  // The area object represents the behavior of a given area. They are stored
+  // for each area, and jog() returns a temporary version that has the current
+  // values for an area, including the inherited ones. The methods of this
+  // object can be invoked by users directly, so method should be exposed with
+  // careful consideration.
   function Area(name) {
     var self = this;
 
     this.name = name;
-    this._handlers = {};
+    this._handlers = []; // the handlers set specifically on this area
     this._useParentHandlers = true;
+    this._lineage = []; // the cumulative area names from root to me (see below)
 
     this.useParentHandlers = function(value) {
       if (value != undefined) this._useParentHandlers = value;
       return this._useParentHandlers;
     };
 
-    this._ancestors = [];
+    // Calculate this area's lineage (except for root, which is
+    // implicit). This sets the _lineage field to a series of names, from
+    // the top down through this area. For example, for the area "x.y.z",
+    // _lineage would have ["x", "x.y", "x.y.z"].
     (function() {
       var parts = name.split(/\./);
-      for (var i = 0; i < parts.length - 1; i++) {
+      for (var i = 0; i < parts.length; i++) {
         if (i == 0) {
-          self._ancestors.push(parts[i]);
+          self._lineage.push(parts[i]);
         } else {
-          self._ancestors.push(self._ancestors[i - 1] + '.' + parts[i]);
+          self._lineage.push(self._lineage[i - 1] + '.' + parts[i]);
         }
       }
-      self._ancestors.reverse();
     })();
 
+    // Build up the current settings for the area by extending values from
+    // ancestors.
+    //
+    // This is done on the fly for each log message. It could be calculated
+    // only if there has been an ancestor changed. That would be faster, but
+    // maybe not worth the complexity. (something like how swing components
+    // invalidate their layout and those of their descendants if they are
+    // changed, and then are recalculated if they are needed but invalid.)
     function buildAreaInfo() {
-      var info = $.extend(true, {}, areaDefaults);
-      for (var i = 0; i < self._ancestors.length; i++) {
-        var ancestorName = self._ancestors[i];
-        var ancestorInfo = areas[ancestorName];
-        if (ancestorInfo) {
-          $.extend(true, info, ancestorInfo);
-          // If this ancestor cuts off its parents, use only the its handlers
-          if (!ancestorInfo._useParentHandlers) {
-            info._handlers = $.extend({}, ancestorInfo._handlers);
+      // We start at the top (root), and then merge in more and more specific
+      // values.
+      var info = $.extend(true, {}, areaRoot);
+      // $.extend() works for everything but the handlers, which need to be
+      // merged by identity. So we handle that ourselves along the way. We
+      // start the final list of handlers with a copy of the root handler set
+      var handlers = [].concat(areaRoot._handlers);
+
+      for (var i = 0; i < self._lineage.length; i++) {
+        var areaName = self._lineage[i];
+        var areaInfo = areas[areaName];
+        if (areaInfo) {
+          $.extend(true, info, areaInfo);
+          // If this area cuts off its parent, use only its own handlers
+          if (!areaInfo._useParentHandlers) {
+            handlers = [];
           }
+          // Equivalent to handlers.push(_handlers[0], _handlers[1], ...)
+          addUnique(handlers, areaInfo._handlers);
         }
       }
-      $.extend(true, info, self);
+
+      info._handlers = handlers;
       return info;
     }
 
+    // The actual logging function
     this.log = function(levelSpec, message) {
       var levelNum = toLevelNum(levelSpec);
+
+      // Special case, and not just for speed -- An Off shouldn't be shown
       if (levelNum == levels.Off) return false;
+
       var areaInfo = buildAreaInfo();
       if (levelNum < areaInfo._level) return false;
 
@@ -328,10 +410,11 @@
 
       var handlers = areaInfo._handlers;
 
+      // Generate the messages
       var levelName = levelNumToName[levelNum];
       var when = areaInfo.toTimeString(new Date());
-      for (var id in handlers) {
-        var handler = handlers[id];
+      for (var i = 0; i < handlers.length; i++) {
+        var handler = handlers[i];
         handler.publish(this.name, levelNum, levelName, when, message);
         if (levelNum >= alertLevelNum && handler.alert) {
           handler.alert(this.name, levelNum, levelName, when, message);
@@ -353,39 +436,24 @@
     };
 
     this.addHandlers = function() {
-      for (var j = 0; j < arguments.length; j++) {
-        var value = arguments[j];
-        if ($.isArray(value)) {
-          this.addHandlers.apply(this, value);
-        } else {
-          this._handlers[value] = value;
-        }
-      }
+      addUnique(this._handlers, arguments);
     };
 
     this.removeHandlers = function() {
-      for (var j = 0; j < arguments.length; j++) {
-        var value = arguments[j];
-        if ($.isArray(value)) {
-          this.addHandlers.apply(this, value);
-        } else {
-          delete this._handlers[value];
-        }
-      }
+      removeUnique(this._handlers, arguments);
     };
 
     this.handlers = function() {
-      if (arguments.length != 0) {
-        this._handlers = {};
-        this.addHandlers.apply(this, arguments);
+      if (arguments.length == 0) {
+        // return a copy of the current list of handlers
+        return [].concat(this._handlers);
       }
-      var known = [];
-      for (var key in this._handlers) {
-        known.push(this._handlers[key]);
-      }
-      return known;
+      // set the list of handlers
+      this._handlers = [];
+      this.addHandlers.apply(this, arguments);
     };
 
+    // Function to implement error(), info(), etc.
     function levelNameFunction(levelNum) {
       return function(message) {
         return this.log(levelNum, message);

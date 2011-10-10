@@ -78,7 +78,7 @@
     function handlerCheckboxChanged(evt) {
         var checkbox = $(evt.target);
         var name = checkbox.attr('name');
-        var handler = $.jog('baseHandlers')[name];
+        var handler = $.jog.baseHandlers[name];
         if (checkbox.is(':checked')) {
             $.jog().addHandlers(handler);
         } else {
@@ -90,7 +90,7 @@
         var levelSelect = $('#levelSelect');
         var defaults = $.jog();
         var defaultLevelName = defaults.level();
-        var levels = $.jog('levels');
+        var levels = $.jog.levels;
         for (var levelName in levels) {
             var opt = $('<option>' + levelName + '</option>');
             levelSelect.append(opt);
