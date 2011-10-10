@@ -51,7 +51,9 @@
     <label for="byNameButton">Use level-named methods
     </label>
 
-    <p> Handlers: <span id='handlers'></span>
+    <p> Handlers: <span id='handlers'></span><br>
+    
+    <input type="button" id="destroyButton" value="Destroy"/>
 </form>
 
 <script type="text/javascript">
@@ -118,6 +120,10 @@
             $.jog(area).log(level, message);
         }
     }
+    
+    function doDestroy() {
+        $.jog.destroy();
+    }
 
     function doLevel() {
         var area = $('#areaText').val();
@@ -131,11 +137,14 @@
         createLevelSelect();
         $('#logButton').click(doLog);
         $('#levelButton').click(doLevel);
+        $('#destroyButton').click(doDestroy);
     });
 </script>
 
+<hr id="before">
 <div id='jog-html' style='border: 10px solid lightBlue;'>
 </div>
+<hr id="after">
 
 </body>
 </html>

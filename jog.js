@@ -92,7 +92,7 @@
         insertHtml: defaultInsertHtml
       },
       publish: function(area, levelNum, level, when, message) {
-        this.ensureTable();
+        this._ensureTable();
         var clsPrefix = this._settings.classPrefix;
 
         var levelClass = clsPrefix + '-level-' + level;
@@ -102,15 +102,15 @@
         row.append($('<td class="' + clsPrefix + '-level"/>').text(level));
         row.append($('<td class="' + clsPrefix + '-when"/>').text(when));
         row.append($('<td class="' + clsPrefix + '-message"/>').html(message));
-        this.tableBody.append(row);
+        this._tableBody.append(row);
       },
       // Ensure that the table exists, adding it if needed
-      ensureTable: function() {
-        if (this.tableBody) return this.tableBody;
+      _ensureTable: function() {
+        if (this._tableBody) return this._tableBody;
 
         var htmlId = this._settings.htmlId;
         if (!htmlId) {
-          htmlId = idPrefix + '-html';
+          htmlId = this._settings.idPrefix + '-html';
         }
 
         // If the top does not exist, create it and add it
@@ -125,6 +125,7 @@
           }
           top.attr('id', htmlId);
           top.addClass(this._settings.classPrefix + "-html");
+          this._addedTop = top;
         }
 
         var idPrefix = this._settings.idPrefix;
@@ -146,7 +147,17 @@
 
         top.append(table);
         table.append(header);
-        this.tableBody = top.find('table > tbody');
+        this._tableBody = top.find('table > tbody');
+        if (!this._addedTop) {
+          // If we didn't add the overall top, then we added the table
+          this._addedTop = table;
+        }
+      },
+      destroy: function() {
+        if (!this._addedTop) return;
+        this._addedTop.remove();
+        delete this._addedTop;
+        delete this._tableBody;
       }
     }),
     popup: newHandler("popup", {
@@ -165,45 +176,58 @@
         };
 
         // If the window is already up and ready, send it the new log
-        if (this.windowReady) {
-          this.sendLog(logRecord);
+        if (this._windowReady) {
+          this._sendLog(logRecord);
         } else {
           // If the "pending" list doesn't exist, this is the first log, so
           // we want to get the popup window started. this.pending holds all log
           // messages that arrive before the popup window is ready to take them.
-          if (!this.pending) {
-            this.pending = [];
+          if (!this._pending) {
+            this._pending = [];
             var self = this;
             var popup;
             // Listen for 'readyMessage' event the popup uses to say it's ready
-            $.pm.bind('readyMessage', function() {
+            console.log('bind readyMessage');
+            $.pm.bind('readyMessage.jog', function() {
+              console.log('got readyMessage');
+              self._popup = popup;
               // When the popup has said it's ready, send the settings ...
-              $.pm({target: popup, type: "logOptions", data: self._settings});
+              console.log('send logOptions');
+              $.pm({target: popup, type: "logOptions.jog",
+                data: self._settings});
               // ... and then send all pending messages
-              self.consumePending(popup);
+              self._consumePending();
             });
             // Now that we're ready to receive the 'ready' message, pop it up
             popup = window.open("jogPopup.html", "Log");
           }
           // Put the log message in the pending queue until the popup is ready
-          this.pending.push(logRecord);
+          this._pending.push(logRecord);
         }
       },
-      consumePending: function(popup) {
-        this.popup = popup;
-        this.windowReady = true;
-        while (this.pending.length > 0) {
-          var logRecord = this.pending.shift();
-          this.sendLog(logRecord);
+      _consumePending: function() {
+        this._windowReady = true;
+        while (this._pending.length > 0) {
+          var logRecord = this._pending.shift();
+          this._sendLog(logRecord);
         }
       },
-      sendLog: function(logRecord) {
+      _sendLog: function(logRecord) {
         // send a log message to the popup for it to display
+        console.log('send logRecord');
         $.pm({
-          target: this.popup,
-          type: "logRecord",
+          target: this._popup,
+          type: "logRecord.jog",
           data: logRecord
         });
+      },
+      destroy: function() {
+        if (!this._popup) return;
+        this._popup.close();
+        $.pm.unbind('.jog');
+        delete this._popup;
+        delete this._windowReady;
+        delete this._pending;
       }
     }),
     console: newHandler("console", {
@@ -212,12 +236,26 @@
         separator: ' - '
       },
       publish: function(area, levelNum, level, when, message) {
+        if (!this._levelMethod) {
+          this._levelMethod = [];
+          this._levelMethod[levels.Fine] = "debug";
+          this._levelMethod[levels.Debug] = "debug";
+          this._levelMethod[levels.Info] = "info";
+          this._levelMethod[levels.Warning] = "warn";
+          this._levelMethod[levels.Config] = "warn";
+          this._levelMethod[levels.Severe] = "error";
+          this._levelMethod[levels.Alert] = "error";
+        }
         var prefix = this._settings.prefix;
         if (!prefix) prefix = '';
         if (prefix.length > 0) prefix += ':';
         message = messageText(message);
         var sep = this._settings.separator;
-        console.log(prefix + area + sep + level + sep + when + sep + message);
+        var method = this._levelMethod[levelNum];
+        if (!method || !console[method]) {
+          method = "log";
+        }
+        console[method](prefix + area + sep + level + sep + when + sep + message);
       },
       alert: function(area, levelNum, level, when, message) {
         message = messageText(message);
@@ -466,6 +504,25 @@
       var levelNum = levelNameToNum[levelName];
       this[functionName] = levelNameFunction(levelNum);
     }
+    
+    this.destroy = function() {
+      for (var i = 0; i < this._handlers.length; i++) {
+        var handler = this._handlers[i];
+        if (handler.destroy) {
+          handler.destroy();
+        }
+      }
+    }
   }
+
+  function destroy() {
+    for (var areaName in areas) {
+      var areaInfo = areas[areaName];
+      areaInfo.destroy();
+    }
+    areaRoot.destroy();
+  }
+
+  $.jog.destroy = destroy;
 
 })(jQuery);

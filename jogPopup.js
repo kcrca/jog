@@ -22,28 +22,31 @@
  * THE SOFTWARE.
  */
 
-var tableBody;
-
-$(document).ready(function() {
-  $.pm.bind('logOptions', handleLogOptions);
-  $.pm.bind('logRecord', handleLogRecord);
-  $.pm({target: window.opener, type: 'readyMessage', data: {}});
-});
-
 var _settings;
 
+$(document).ready(function() {
+  console.log('bid logOptions');
+  $.pm.bind('logOptions.jog', handleLogOptions);
+  console.log('bid logRecord');
+  $.pm.bind('logRecord.jog', handleLogRecord);
+  console.log('send readyMessage');
+  $.pm({target: window.opener, type: 'readyMessage.jog', data: {}});
+});
+
 function handleLogOptions(data) {
-  var merged = $.extend(_settings, data.settings);
+  console.log('got logOptions');
+  var merged = $.extend({}, _settings, data.settings);
   for (var key in merged) {
-    if (_settings[key] != data.settings[key]) {
+    if (_settings[key] != merged[key]) {
       updateSetting(data.settings, key);
     }
   }
   // store a copy of the settings
-  _settings = $.extend({}, data.settings);
+  _settings = merged;
 }
 
 function handleLogRecord(data) {
+  console.log('got logRecord');
   $.jog.baseHandlers.html.publish(data.area, data.levelNum, data.level,
       data.when, data.message);
 }
