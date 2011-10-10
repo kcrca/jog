@@ -28,7 +28,8 @@
 <head>
     <title>Logging Test</title>
 
-    <script type="text/javascript" src="jquery-1.6.4.min.js"></script>
+    <script type="text/javascript"
+            src="http://code.jquery.com/jquery-latest.js"></script>
     <script type="text/javascript" src="postmessage/postmessage.js"></script>
     <script type="text/javascript" src="jog.js"></script>
 
@@ -51,8 +52,8 @@
     <label for="byNameButton">Use level-named methods
     </label>
 
-    <p> Handlers: <span id='handlers'></span><br>
-    
+    <p> Handlers: <span id='handlers'></span><br></p>
+
     <input type="button" id="destroyButton" value="Destroy"/>
 </form>
 
@@ -120,7 +121,7 @@
             $.jog(area).log(level, message);
         }
     }
-    
+
     function doDestroy() {
         $.jog.destroy();
     }
