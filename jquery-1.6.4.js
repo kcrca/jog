@@ -2481,9 +2481,9 @@
       // Fall back to attribute presence where some booleans are not supported
       var attrNode;
       return
-          jQuery.prop(elem, name) === true ||
-              ( attrNode = elem.getAttributeNode(name) ) &&
-                  attrNode.nodeValue !== false ? name.toLowerCase() : undefined;
+      jQuery.prop(elem, name) === true ||
+          ( attrNode = elem.getAttributeNode(name) ) &&
+              attrNode.nodeValue !== false ? name.toLowerCase() : undefined;
     },
     set: function(elem, value, name) {
       var propName;
@@ -2672,10 +2672,10 @@
           // Discard the second event of a jQuery.event.trigger() and
           // when an event is called after a page has unloaded
           return
-              typeof jQuery !== "undefined" &&
-                  (!e || jQuery.event.triggered !== e.type) ?
-                  jQuery.event.handle.apply(eventHandle.elem, arguments) :
-                  undefined;
+          typeof jQuery !== "undefined" &&
+              (!e || jQuery.event.triggered !== e.type) ?
+              jQuery.event.handle.apply(eventHandle.elem, arguments) :
+              undefined;
         };
       }
 
@@ -6627,10 +6627,10 @@
       get: function(elem, computed) {
         // IE uses filters for opacity
         return
-            ropacity.test((
-                computed && elem.currentStyle ? elem.currentStyle.filter :
-                    elem.style.filter) || "") ?
-                ( parseFloat(RegExp.$1) / 100 ) + "" : computed ? "1" : "";
+        ropacity.test((
+            computed && elem.currentStyle ? elem.currentStyle.filter :
+                elem.style.filter) || "") ?
+            ( parseFloat(RegExp.$1) / 100 ) + "" : computed ? "1" : "";
       },
 
       set: function(elem, value) {
@@ -7022,7 +7022,7 @@
                 jQuery("<div>")// inject the contents of the document in, removing the scripts// to avoid any 'Permission Denied' errors in IE
                     .append(responseText.replace(rscript, ""))
 
-                  // Locate the specified elements.find(selector) :
+              // Locate the specified elements.find(selector) :
 
               // If not, just inject the full result
                 responseText);
@@ -7042,9 +7042,11 @@
     },
 
     serializeArray: function() {
-      return this.map(function() {
-        return this.elements ? jQuery.makeArray(this.elements) : this;
-      }).filter(function() {
+      return this.map(
+          function() {
+            return this.elements ? jQuery.makeArray(this.elements) : this;
+          }).filter(
+          function() {
             return this.name && !this.disabled &&
                 ( this.checked || rselectTextarea.test(this.nodeName) ||
                     rinput.test(this.type) );
