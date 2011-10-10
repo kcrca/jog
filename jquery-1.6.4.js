@@ -7022,10 +7022,10 @@
                 jQuery("<div>")// inject the contents of the document in, removing the scripts// to avoid any 'Permission Denied' errors in IE
                     .append(responseText.replace(rscript, ""))
 
-              // Locate the specified elements.find(selector) :
+              // Locate the specified elements.find(selector) 
 
               // If not, just inject the full result
-                responseText);
+                : responseText);
           }
 
           if (callback) {
