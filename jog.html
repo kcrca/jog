@@ -289,15 +289,12 @@ $.jog().removeHandlers($.jog.baseHandlers.console);</pre>
                 <code>idPrefix</code> is untouched is <code>jog-html</code>.
             </dd>
             <dt><code>insertHtml</code></dt>
-            <dd>The ID of the node which will contain the log table, which will
-                be created if it doesn't exist. When the first message is to be
-                displayed, the handler will first look for a node with that ID.
-                If it finds one, the table will be appended to that node. If it
-                does not, it will create a blank <code>&lt;div&gt;</code> with
-                this ID. This will be appended to the end of the page (but see
-                <code>insertHtml</code> below). The default value is generated
-                using <code>idPrefix</code>, so the default if
-                <code>idPrefix</code> is untouched is <code>jog-html</code>.
+            <dd>The first time a log message needs to be displayed, if a node
+                with the correct ID (htmlId) cannot be found on the page, this
+                function will be called to insert it, with the required node ID
+                passed in. The default is to append a <code>&lt;div&gt;</code>
+                to the body of the page. If this method does not add the
+                required node, an exception will be thrown.
             </dd>
         </dl>
     </dd>
@@ -343,12 +340,12 @@ $.jog().removeHandlers($.jog.baseHandlers.console);</pre>
 <h3>Advanced Topic: Alerts</h3>
 
 <p>Some messages are so critical that you want to make sure they are more
-   forcefully thrust upon the user. This is the purpose of the Alert log level.
-   This is a second threshold of an area -- the level at which messages will be
-   displayed as alerts. Any log at this level or above will be logged not only
-   as a regular log message but also will be given to each active handler to
-   display as an alert. If the handler supports this feature, it will perform an
-   appropriate action.</p>
+   forcefully thrust upon the user. This is the purpose of the
+    <code>Alert</code> log level. This is a second threshold of an area -- the
+   level at which messages will be displayed as alerts. Any log at this level or
+   above will be logged not only as a regular log message but also will be given
+   to each active handler to display as an alert. If the handler supports this
+   feature, it will perform an appropriate action.</p>
 
 <pre>$.jog('ui').alert('Cannot store user preferences');</pre>
 
@@ -375,14 +372,12 @@ $.jog().removeHandlers($.jog.baseHandlers.console);</pre>
 <p>The <code>newHandler()</code> method creates a new handler object with the
    given name, and then copies the properties of the second parameter to this
    object. Each handler has a <code>name</code> field, a <code>config()</code>
-   method to set properties, stored in a <code>settings</code> field, that can
-   be used by the <code>publish()</code> and other methods.</p>
-
-<p>The name is required, but need not be unique. Each handler is assigned a
-   unique ID that is returned by its <code>toString()</code> method. This is
-   used internally to merge the set of handlers from each area, its parents, and
-   the root. You should not modify the id or the <code>toString()</code> method.
-</p>
+   method to set properties, stored in a <code>_settings</code> field, that can
+   be used by the <code>publish()</code> and other methods. (The settings field
+   is not exposed as part of the API because it is often better for a change of
+   settings to result in immediate action, rather than have each method checking
+   to see if the settings have been changed since the last time some method was
+   invoked on the handler.) The name is required, but need not be unique.</p>
 
 <p>The <code>publish()</code> method is what is called by <code>log()</code>,
    and is required of all handlers. The parameters are those from the <code>log()</code>
@@ -392,5 +387,34 @@ $.jog().removeHandlers($.jog.baseHandlers.console);</pre>
 <p>If you want your handler to also provide alerts, it should also support an
     <code>alert()</code> method that takes the same parameters as <code>publish()</code>.
 </p>
+
+<p>If what you need is to have a base handler with two different settings</p>
+
+<h3>The API</h3>
+
+<table border="1" style="width: 100%">
+    <caption><strong><code>$.jog</code></strong></caption>
+    <col>
+    <col>
+    <tbody>
+    <tr>
+        <td><code>$.jog([<em>areaName</em>])</code></td>
+        <td>Return an object that represents the given area of code. If
+            <code><em>areaName</em></code> is not provided (or is <code>undefined</code>),
+            the root area object is returned.
+        </td>
+    </tr>
+    <tr>
+        <td>$.jog.baseHandlers</td>
+        <td>An object whose properties are the handlers provided by the jog
+            package itself.
+        </td>
+    </tr>
+    <tr>
+        <td>$.jog.newHandler(name, properties)</td>
+        <td>Create a new type of handler object.</td>
+    </tr>
+    </tbody>
+</table>
 </body>
 </html>
