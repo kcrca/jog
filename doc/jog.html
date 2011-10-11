@@ -339,7 +339,7 @@ threshold level:</p>
 <p>You can write your own handlers. The <code>newHandler()</code> function is
 core to doing it:</p>
 <pre>var myHandler = $.jog.newHandler(name, {
-    publish: function(area, levelNum, level, when, message) { ... }
+    publish: function(area, levelNum, levelName, when, message) { ... }
 });</pre>
 
 <p>The <code>newHandler()</code> method creates a new handler object with the
