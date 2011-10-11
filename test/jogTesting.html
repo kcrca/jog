@@ -92,7 +92,7 @@
     function createLevelSelect() {
         var levelSelect = $('#levelSelect');
         var defaults = $.jog();
-        var defaultLevelName = defaults.level();
+        var defaultLevelName = $.jog.levelName(defaults.level());
         var levels = $.jog.levels;
         for (var levelName in levels) {
             var opt = $('<option>' + levelName + '</option>');

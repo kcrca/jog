@@ -25,7 +25,6 @@
 (function($) {
   $.jog = jog;
 
-  //!! Make levels actual objects so ==, <=, etc might operate?
   var n = 0;
   //noinspection JSUnusedGlobalSymbols
   var levels = {
@@ -38,8 +37,8 @@
     Alert: n++,
     Off: n++
   };
-  $.extend($.jog, levels);
-  $.jog.levels = levels;
+  $.extend($.jog, levels);  // create $.jog.Info, etc.
+  $.jog.levels = levels;    // create $.jog.levels.Info, etc.
 
   var levelNameToNum = {};
   var levelNumToName = {};
@@ -79,7 +78,7 @@
   // The popup handler needs the location of this jog.js file so it can find the
   // companion logPopup.html file. The following code is borrowed from
   // http://stackoverflow.com/questions/984510/what-is-my-script-src-url/3865126#3865126
-  var scriptDir= (function() {
+  var scriptDir = (function() {
     var scripts = document.getElementsByTagName('script'),
         script = scripts[scripts.length - 1];
 
@@ -102,15 +101,15 @@
         htmlId: undefined, // by default this is generated from idPrefix
         insertHtml: defaultInsertHtml
       },
-      publish: function(area, levelNum, level, when, message) {
+      publish: function(area, levelNum, levelName, when, message) {
         this._ensureTable();
         var clsPrefix = this._settings.classPrefix;
 
-        var levelClass = clsPrefix + '-level-' + level;
+        var levelClass = clsPrefix + '-level-' + levelName;
         var areaClass = clsPrefix + '-area-' + area;
         var row = $('<tr/>').addClass(levelClass).addClass(areaClass);
         row.append($('<td class="' + clsPrefix + '-area"/>').text(area));
-        row.append($('<td class="' + clsPrefix + '-level"/>').text(level));
+        row.append($('<td class="' + clsPrefix + '-level"/>').text(levelName));
         row.append($('<td class="' + clsPrefix + '-when"/>').text(when));
         row.append($('<td class="' + clsPrefix + '-message"/>').html(message));
         this._tableBody.append(row);
@@ -176,12 +175,12 @@
         title: 'Log Messages',
         css: 'jog.css'
       },
-      publish: function(area, levelNum, level, when, message) {
+      publish: function(area, levelNum, levelName, when, message) {
         // The message record for sending logs to the popup window
         var logRecord = {
           area: area,
           levelNum: levelNum,
-          level: level,
+          levelName: levelName,
           when: when,
           message: message
         };
@@ -246,7 +245,7 @@
         prefix: '',
         separator: ' - '
       },
-      publish: function(area, levelNum, level, when, message) {
+      publish: function(area, levelNum, levelName, when, message) {
         if (!this._levelMethod) {
           this._levelMethod = [];
           this._levelMethod[levels.Fine] = "debug";
@@ -266,12 +265,12 @@
         if (!method || !console[method]) {
           method = "log";
         }
-        console[method](prefix + area + sep + level + sep + when + sep +
+        console[method](prefix + area + sep + levelName + sep + when + sep +
             message);
       },
-      alert: function(area, levelNum, level, when, message) {
+      alert: function(area, levelNum, levelName, when, message) {
         message = messageText(message);
-        alert("Area: " + area + "\n" + "Level: " + level + "\n" + "When: " +
+        alert("Area: " + area + "\n" + "Level: " + levelName + "\n" + "When: " +
             when + "\n" + "Message: " + message + "\n");
       }
     })
@@ -313,16 +312,21 @@
 
   // Reliably convert any string or number to its level number, if it has one
   function toLevelNum(level) {
-    if (level == undefined) return undefined;
+    if (typeof(level) == 'number') return level;
+    if (!level) return undefined;
+    if (typeof(level) == 'object') {
+      level = level.toString();
+    }
     if (typeof(level) == 'string') {
       // See if it's "12"
       var num = parseInt(level);
-      if (!isNaN(num)) {
+      if (isNaN(num)) {
+        return levelNameToNum[level.charAt(0)];
+      } else {
         return num;
       }
-      return levelNameToNum[level.charAt(0)];
     }
-    return level;
+    throw "Unexpected type of level specifier: " + typeof(level) + ": " + level;
   }
 
   // Return the object that represents an area
@@ -444,8 +448,8 @@
     }
 
     // The actual logging function
-    this.log = function(levelSpec, message) {
-      var levelNum = toLevelNum(levelSpec);
+    this.log = function(level, message) {
+      var levelNum = toLevelNum(level);
 
       // Special case, and not just for speed -- An Off shouldn't be shown
       if (levelNum == levels.Off) return false;
@@ -476,13 +480,13 @@
     this.level = function(level) {
       // we check with "arguments.length" because "undefined" is a valid value
       if (arguments.length == 1) this._level = toLevelNum(level);
-      return levelNumToName[this._level];
+      return this._level;
     };
 
     this.alertLevel = function(level) {
       // we check with "arguments.length" because "undefined" is a valid value
       if (arguments.length == 1) this._alertLevel = toLevelNum(level);
-      return levelNumToName[this._alertLevel];
+      return this._alertLevel;
     };
 
     this.addHandlers = function() {
