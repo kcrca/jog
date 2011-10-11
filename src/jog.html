@@ -21,7 +21,6 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   ~ THE SOFTWARE.
   -->
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
         "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -36,10 +35,13 @@
 
 <h3>Quick Start</h3>
 
-<p>The jog package is a logging package for Javascript and JQuery, designed to
-be used for client-side application logging, in the manner of Java packages
-such as log4j or java.util.logging. Using jog usually is as simple as this:</p>
-<pre>$.jog('options', $.jog.Info, 'Reading user option settings');</pre>
+<p>Jog is a logging package for Javascript and JQuery, designed to be used for
+client-side application logging, analogous to Java packages such as log4j or
+java.util.logging. It allows you to separate your logs into various areas so
+you can turn on the logs of one area without seeing all the others, especially
+those of plugins or other packages you may be using. Using jog usually is as
+simple as this:</p>
+<pre>$.jog('options').info('Reading user option settings');</pre>
 
 <p>This creates an informational-level log message for the "options" area of
 your code to indicate you were, well, reading the user option settings.</p>
@@ -51,21 +53,21 @@ interested in generally, and for specific areas of your code. If you were
 currently debugging the options area of your code you could:</p>
 <pre>$.jog('options').level($.jog.Debug);</pre>
 
-<p>By default this will put informational-level log messages on the console,
-but you can configure messages to go into a table on the page, or in a popup
-window, or any place you like:</p>
+<p>By default this puts informational-level log messages on the console, but
+you can configure messages to go onto the page, or in a popup window, or any
+place you like:</p>
 <pre>$.jog('options').addHandlers($.jog.baseHandlers.popup);</pre>
 
-<p>This would add a handler for options messages that would put log messages in
-a popup window, as well as on the console.</p>
+<p>This adds a handler for options messages that puts log messages in a popup
+window, as well as on the console.</p>
 
 <h3>The Basics: Areas and Levels</h3>
 
 <p>When developing and debugging software you often want to track values or
-which code is executing. Sometimes these are worth holding on to for the next
-time you have problems in that same code. Logging is a common way to do this:
-Instead of simple print statements, you put in conditional print statements
-that can be turned on and off as needed. In Java, the
+which code is executing. Sometimes these debug messages are worth holding on to
+for the next time you have problems in that same code. Logging is a common way
+to do this: Instead of simple print statements, you put in conditional print
+statements that can be turned on and off as needed. In Java, the
 <code>java.util.logging</code> package and the log4j package provide these
 tools. Other languages have similar tools. The jog package is designed to do
 this for Javascript/JQuery using terms and approaches that are already familiar
@@ -117,7 +119,7 @@ For example, this would set the overall log level to <code>Debug</code>: </p>
 
 <p>The settings used for an area will be the most specific to that area. In
 other words, when looking for a threshold level for <code>ui.prefs</code>, the
-area ui.prefs is looked at for a level setting. If there isn't one, the
+area ui.prefs is checked for a level setting. If there isn't one, then the
 <code>ui</code> area is checked. Finally, the root level is checked if no
 intervening area has a setting.</p>
 
@@ -159,6 +161,13 @@ itself (<code>$.jog.Fine</code>) instead of this object
 (<code>$.jog.levels.Fine</code>) It is a way you can loop through the
 levels:</p>
 <pre>for (var logLevel in $.jog.levels) { ... }</pre>
+
+<p>It is perfectly possible to log messages in the root area, but you should
+only do this if you are writing code you don't expect anyone else to use. If
+you did that in a function you published for others, and they wanted to use jog
+too, your messages would be displayed along with any of theirs, and that would
+be unwelcome. If you expect others to use your code, put logging into an area
+whose name you expect to be unique to your code.</p>
 
 <h3>Basic Output: Handlers</h3>
 
