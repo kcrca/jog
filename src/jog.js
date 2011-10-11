@@ -43,12 +43,23 @@
   var levelNameToNum = {};
   var levelNumToName = {};
 
+  var uniqueIdSequence = 0;
+
+  function newUniqueId(name) {
+    var time = new Date().getTime();
+    var random = Math.random().toPrecision(21);
+    var sequence = uniqueIdSequence++;
+    return name + ':' + time + ':' + random + ':' + sequence;
+  }
+
   /**
    * The handler base class. Takes care of the config() method and settings
    * field.
    */
   function Handler(name) {
     this.name = name;
+
+    this._handlerId = newUniqueId(name);
 
     // The method that modifies the configuration fields 
     this.config = function(properties, override) {
@@ -61,6 +72,16 @@
       } else {
         $.extend(this._settings, properties);
       }
+    };
+
+    this.copy = function(name) {
+      name = name || this.name + 'Copy';
+      var dup = $.extend(true, {}, this);
+      dup._handlerId = newUniqueId(name);
+      if (this.copyCleanup) {
+        this.copyCleanup(dup);
+      }
+      return dup;
     };
   }
 
@@ -106,8 +127,14 @@
         var clsPrefix = this._settings.classPrefix;
 
         var levelClass = clsPrefix + '-level-' + levelName;
-        var areaClass = clsPrefix + '-area-' + area;
-        var row = $('<tr/>').addClass(levelClass).addClass(areaClass);
+        var row = $('<tr/>').addClass(levelClass);
+        var areaParts = area.split('.');
+        var lineage = '';
+        for (var i = 0; i < areaParts.length; i++) {
+          lineage += '-' + areaParts[i];
+          var areaClass = clsPrefix + '-area' + lineage;
+          row.addClass(areaClass);
+        }
         row.append($('<td class="' + clsPrefix + '-area"/>').text(area));
         row.append($('<td class="' + clsPrefix + '-level"/>').text(levelName));
         row.append($('<td class="' + clsPrefix + '-when"/>').text(when));
@@ -141,31 +168,46 @@
         var idPrefix = this._settings.idPrefix;
         var classPrefix = this._settings.classPrefix;
 
-        // common code for some nodes
-        function setup(node, suffix) {
-          node.addClass(classPrefix + '-' + suffix);
-          node.attr('id', idPrefix + '-' + suffix);
-          return node;
+        // If the table already exists, then use it. This typically would only
+        // happen if two differently-configured html publishers were writing to
+        // the same table; if so, the second one would see the table already
+        // existing. I don't recommend that people build pages with this already
+        // set up themselves, so I don't document this behavior -- it's internal
+        // and subject to change.
+        var tableId = idPrefix + '-' + 'table';
+        var table = $('#' + tableId);
+        if (!table || table.length == 0) {
+          // common code for some nodes
+          function setup(node, suffix) {
+            node.addClass(classPrefix + '-' + suffix);
+            node.attr('id', idPrefix + '-' + suffix);
+            return node;
+          }
+
+          table = setup($('<table/>'), 'table');
+          var header = setup($('<tr/>'), 'header');
+          header.append($('<th/>').text('Area'));
+          header.append($('<th/>').text('Level'));
+          header.append($('<th/>').text('When'));
+          header.append($('<th/>').text('Message'));
+
+          top.append(table);
+          table.append(header);
+          if (!this._addedTop) {
+            // If we didn't add the top, the top-most thing added is the table
+            this._addedTop = table;
+          }
         }
-
-        var table = setup($('<table/>'), 'table');
-        var header = setup($('<tr/>'), 'header');
-        header.append($('<th/>').text('Area'));
-        header.append($('<th/>').text('Level'));
-        header.append($('<th/>').text('When'));
-        header.append($('<th/>').text('Message'));
-
-        top.append(table);
-        table.append(header);
         this._tableBody = top.find('table > tbody');
-        if (!this._addedTop) {
-          // If we didn't add the overall top, then we added the table
-          this._addedTop = table;
-        }
       },
       destroy: function() {
         if (!this._addedTop) return;
         this._addedTop.remove();
+        this.cleanupCopy();
+        delete this._addedTop;
+        delete this._tableBody;
+      },
+      cleanupCopy: function() {
         delete this._addedTop;
         delete this._tableBody;
       }
@@ -197,14 +239,14 @@
             var self = this;
             var popup;
             // Listen for 'readyMessage' event the popup uses to say it's ready
-            console.log('bind readyMessage');
             $.pm.bind('readyMessage.jog', function() {
-              console.log('got readyMessage');
               self._popup = popup;
               // When the popup has said it's ready, send the settings ...
-              console.log('send logOptions');
-              $.pm({target: popup, type: "logOptions.jog",
-                data: self._settings});
+              $.pm({
+                target: popup,
+                type: "logOptions.jog",
+                data: self._settings
+              });
               // ... and then send all pending messages
               self._consumePending();
             });
@@ -224,7 +266,6 @@
       },
       _sendLog: function(logRecord) {
         // send a log message to the popup for it to display
-        console.log('send logRecord');
         $.pm({
           target: this._popup,
           type: "logRecord.jog",
@@ -238,6 +279,9 @@
         delete this._popup;
         delete this._windowReady;
         delete this._pending;
+      },
+      cleanupCopy: function() {
+        throw "Popup handler not ready (yet) for multiple copies";
       }
     }),
     console: newHandler("console", {
@@ -329,6 +373,14 @@
     throw "Unexpected type of level specifier: " + typeof(level) + ": " + level;
   }
 
+  // Reliably convert any string or number to its level name, if it has one
+  function toLevelName(level) {
+    var levelNum = toLevelNum(level);
+    return levelNumToName[levelNum];
+  }
+
+  $.jog.levelName = toLevelName;
+
   // Return the object that represents an area
   function jog(area) {
     if (!area)
@@ -342,43 +394,6 @@
     return areaInfo;
   }
 
-  // Merge a second array of values into the first, eliminating duplicate
-  // objects (as opposed to duplicate values, which would be done by
-  // $.extend()).
-  //
-  // There seems to be no easy way to filter out unique//identities*, which
-  // have the property of equality but not of order (you can test if x === y,
-  // but there is no equivalent of <, <=, etc. that deals with identity). So the
-  // usual unique-ing algorithm of "first sort, then eliminate successive
-  // duplicates" doesn't work because you can't sort them. So we have to do the
-  // merge linearly. Luckily the list of handlers usually has no more than a
-  // few members, so this shouldn't explode.
-  function addUnique(target, array) {
-    nextArrayValue:
-        for (var i = 0; i < array.length; i++) {
-          var value = array[i];
-          for (var j = 0; j < target.length; j++) {
-            if (value === target[j]) {
-              continue nextArrayValue;
-            }
-          }
-          target.push(value);
-        }
-  }
-
-  // Removes elements from an array by identity; see addUnique()
-  function removeUnique(target, array) {
-    for (var i = 0; i < array.length; i++) {
-      var value = array[i];
-      for (var j = 0; j < target.length; j++) {
-        if (value === target[j]) {
-          target.splice(j, 1);
-          break;
-        }
-      }
-    }
-  }
-
   // The area object represents the behavior of a given area. They are stored
   // for each area, and jog() returns a temporary version that has the current
   // values for an area, including the inherited ones. The methods of this
@@ -388,7 +403,7 @@
     var self = this;
 
     this.name = name;
-    this._handlers = []; // the handlers set specifically on this area
+    this._handlers = {}; // the handlers set specifically on this area
     this._useParentHandlers = true;
     this._lineage = []; // the cumulative area names from root to me (see below)
 
@@ -424,26 +439,18 @@
       // We start at the top (root), and then merge in more and more specific
       // values.
       var info = $.extend(true, {}, areaRoot);
-      // $.extend() works for everything but the handlers, which need to be
-      // merged by identity. So we handle that ourselves along the way. We
-      // start the final list of handlers with a copy of the root handler set
-      var handlers = [].concat(areaRoot._handlers);
 
       for (var i = 0; i < self._lineage.length; i++) {
         var areaName = self._lineage[i];
         var areaInfo = areas[areaName];
         if (areaInfo) {
-          $.extend(true, info, areaInfo);
           // If this area cuts off its parent, use only its own handlers
           if (!areaInfo._useParentHandlers) {
-            handlers = [];
+            info._handlers = {};
           }
-          // Equivalent to handlers.push(_handlers[0], _handlers[1], ...)
-          addUnique(handlers, areaInfo._handlers);
+          $.extend(true, info, areaInfo);
         }
       }
-
-      info._handlers = handlers;
       return info;
     }
 
@@ -462,13 +469,11 @@
 
       var alertLevelNum = areaInfo._alertLevel;
 
-      var handlers = areaInfo._handlers;
-
       // Generate the messages
       var levelName = levelNumToName[levelNum];
       var when = areaInfo.toTimeString(new Date());
-      for (var i = 0; i < handlers.length; i++) {
-        var handler = handlers[i];
+      for (var id in areaInfo._handlers) {
+        var handler = areaInfo._handlers[id];
         handler.publish(this.name, levelNum, levelName, when, message);
         if (levelNum >= alertLevelNum && handler.alert) {
           handler.alert(this.name, levelNum, levelName, when, message);
@@ -490,21 +495,30 @@
     };
 
     this.addHandlers = function() {
-      addUnique(this._handlers, arguments);
+      for (var i = 0; i < arguments.length; i++) {
+        var handler = arguments[i];
+        this._handlers[handler._handlerId] = handler;
+      }
     };
 
     this.removeHandlers = function() {
-      removeUnique(this._handlers, arguments);
+      for (var i = 0; i < arguments.length; i++) {
+        var handler = arguments[i];
+        delete this._handlers[handler._handlerId];
+      }
     };
 
     this.handlers = function() {
-      if (arguments.length == 0) {
-        // return a copy of the current list of handlers
-        return [].concat(this._handlers);
+      if (arguments.length != 0) {
+        // set the list of handlers
+        this._handlers = {};
+        this.addHandlers.apply(this, arguments);
       }
-      // set the list of handlers
-      this._handlers = [];
-      this.addHandlers.apply(this, arguments);
+      var current = [];
+      for (var id in this._handlers) {
+        current.push(this._handlers[id]);
+      }
+      return current;
     };
 
     // Function to implement error(), info(), etc.
@@ -522,8 +536,8 @@
     }
 
     this.destroy = function() {
-      for (var i = 0; i < this._handlers.length; i++) {
-        var handler = this._handlers[i];
+      for (var id in this._handlers) {
+        var handler = this._handlers[id];
         if (handler.destroy) {
           handler.destroy();
         }
