@@ -408,7 +408,7 @@
     this._lineage = []; // the cumulative area names from root to me (see below)
 
     function notDerived() {
-      if (self.isDerived) throw "Operation not allowed on derived area";
+      if (self._isDerived) throw "Operation not allowed on derived area";
     }
 
     this.useParentHandlers = function(value) {
@@ -446,7 +446,7 @@
       // We start at the top (root), and then merge in more and more specific
       // values.
       var info = $.extend(true, {}, areaRoot);
-      this.isDerived = true;
+      info._isDerived = true;
 
       for (var i = 0; i < this._lineage.length; i++) {
         var areaName = this._lineage[i];
@@ -469,7 +469,7 @@
       // Special case, and not just for speed -- An Off shouldn't be shown
       if (levelNum == levels.Off) return false;
 
-      var derived = (this.isDerived ? this : this.derive());
+      var derived = (this._isDerived ? this : this.derive());
       if (levelNum < derived._level) return false;
 
       // This is how the user can check if a certain level would be logged

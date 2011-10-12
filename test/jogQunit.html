@@ -41,10 +41,13 @@
 
 <script>
 var runTests = function() {
+    // without this QUnit reorders tests as it sees fit
+    QUnit.config.reorder = false;
+
     var levels = $.jog.levels;
     var baseHandlers = $.jog.baseHandlers;
     var timeSource;
-    var mockHandlers;
+    var mockHandlers = [];
 
     function TimeSource() {
         var count = 0;
@@ -57,7 +60,11 @@ var runTests = function() {
     }
 
     function newMockHandler(suffix) {
-        suffix = suffix ? '-' + suffix : '';
+        if (suffix) {
+            suffix = '-' + suffix;
+        } else {
+            suffix = '';
+        }
         var handler = $.jog.newHandler("mockHandler" + suffix, {
             publish: function(area, levelNum, levelName, when, message) {
                 this.ensureSetup();
@@ -114,7 +121,6 @@ var runTests = function() {
                 return lines.join('\n');
             }
         });
-        $.jog().handlers(handler);
         mockHandlers.push(handler);
         return handler;
     }
@@ -173,6 +179,7 @@ var runTests = function() {
     test("test basic filtering", function() {
         initMocks();
         var mockHandler = newMockHandler();
+        $.jog().handlers(mockHandler);
         var area = $.jog('filter');
         var rootMsg = 'root @ ' + $.jog.levelName(levels.Info);
         for (var filterAt = levels.Fine; filterAt <= levels.Off; filterAt++) {
@@ -243,7 +250,7 @@ var runTests = function() {
          * Next we try what happens if we turn off inheritance of handlers.
          */
         resetMocks();
-        
+
         areaX.useParentHandlers(false);
         logMessages();
         notEqual(h.toString(), hStr);
@@ -260,11 +267,12 @@ var runTests = function() {
          */
         resetMocks();
 
-        // Set all handler at each area
+        // Set all handlers at each area (via both handlers() and addHandlers())
         area.handlers(h);
         areaX.handlers(hX);
         areaX.addHandlers(h);
-        areaXY.handlers(h, hX, hXY);
+        areaXY.handlers(h, hXY);
+        areaXY.addHandlers(hX);
 
         // verify settings
         handlers = area.handlers;
@@ -284,12 +292,29 @@ var runTests = function() {
          * when there are duplicates, so it should not make a difference.
          */
         resetMocks(false);
-        
+
         areaX.useParentHandlers(false);
         logMessages();
         equal(h.toString(), hStr);
         equal(hX.toString(), hXStr);
         equal(hXY.toString(), hXYStr);
+    });
+
+    test("derived method", function() {
+        initMocks();
+        var root = $.jog();
+        var area = $.jog('derived');
+        var h = newMockHandler();
+        area.addHandlers(h);
+        
+        var derived = area.derive();
+
+        equals(levels.Info, root.level());
+        equals(undefined, area.level());
+        equals(root.level(), derived.level());
+        
+        deepEqual(area.handlers(), [h]);
+        equal(derived.handlers().length, 2);
     });
 };
 
