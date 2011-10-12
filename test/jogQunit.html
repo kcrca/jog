@@ -40,6 +40,50 @@
 </head>
 
 <script>
+function newMockHandler() {
+    var handler = $.jog.newHandler("mockHandler", {
+        publish: function(area, levelNum, levelName, when, message) {
+            this.ensureSetup();
+            this.logHistory.push([area, levelNum, levelName, when, message]);
+        },
+        alert: function(area, levelNum, levelName, when, message) {
+            this.ensureSetup();
+            this.alertHistory.push([area, levelNum, levelName, when, message]);
+        },
+        destroy: function() {
+            this.ensureSetup();
+            this.destroyed = true;
+        },
+        reset: function() {
+            this.logHistory = [];
+            this.alertHistory = [];
+            this.destroyed = false;
+        },
+        testLog: function(willAdd, area, level, message) {
+            this.ensureSetup();
+            var oldLen = this.logHistory.length;
+            $.jog(area).log(level, message);
+            var newLen = this.logHistory.length;
+            var msg = ': ' + message;
+            if (!willAdd) {
+                equal(newLen, oldLen, "should not have grown" + msg);
+            } else {
+                equal(newLen, oldLen + 1, "grew by one" + msg);
+                if (newLen != oldLen + 1) return;
+                var latest = this.logHistory[oldLen];
+                equal(latest[0], area, message);
+                equal(latest[1], level, message);
+                equal(latest[4], message, message);
+            }
+        },
+        ensureSetup: function() {
+            if (!this.logHistory) this.reset();
+        }
+    });
+    $.jog().handlers(handler);
+    return handler;
+}
+
 var runTests = function() {
     test("basic expectations", function() {
         expect(5);
@@ -60,54 +104,38 @@ var runTests = function() {
         ok($.jog().toTimeString(new Date(0)).match(/-?\d\d:00:00/));
     });
 
-    var mockHandler = $.jog.newHandler("testing", {
-        publish: function(area, levelNum, levelName, when, message) {
-            this.logHistory.push([area, levelNum, levelName, when, message]);
-        },
-        alert: function(area, levelNum, levelName, when, message) {
-            this.alertHistory.push([area, levelNum, levelName, when, message]);
-        },
-        destroy: function() {
-            this.destroyed = true;
-        },
-        reset: function() {
-            this.logHistory = [];
-            this.alertHistory = [];
-            this.destroyed = false;
-        },
-        testLog: function(willAdd, area, level, message) {
-            var oldLen = this.logHistory.length;
-            $.jog(area).log(level, message);
-            var newLen = this.logHistory.length;
-            if (!willAdd) {
-                equal(newLen, oldLen, "should not have grown");
-            } else {
-                if (!equal(newLen, oldLen + 1, "grew by one")) return;
-                var latest = this.logHistory[oldLen];
-                equal(latest[0], area);
-                equal(latest[1], level);
-                equal(latest[4], message);
-            }
-        }
-    });
-    var msg1 = "Message 1";
-
-    function testLog(willAdd, area, level, message) {
-        mockHandler.testLog(willAdd, area, level, message);
-    }
-
-    test("test the testing handler", function() {
-        $.jog().addHandlers(mockHandler);
-        mockHandler.reset();
+    test("test the mock handler", function() {
+        var mockHandler = newMockHandler();
+        var msg1 = "Message 1";
+        $.jog().handlers(mockHandler);
+        equal(mockHandler.name, "mockHandler");
+        $.jog().handlers(mockHandler);
         var handlers = $.jog().handlers();
-        equal(mockHandler.name, "testing");
-        testLog(true, 'x.y.z', levels.Info, msg1);
-        testLog(false, 'x.y.z', levels.Debug, msg1);
+        ok(handlers[0] === mockHandler);
+        mockHandler.testLog(true, 'x.y.z', levels.Info, msg1);
+        mockHandler.testLog(false, 'x.y.z', levels.Debug, msg1);
     });
 
     test("test basic filtering", function() {
-
-    })
+        var mockHandler = newMockHandler();
+        var area = $.jog('filter');
+        var rootMsg = 'root @ ' + $.jog.levelName(levels.Info);
+        for (var filterAt = levels.Fine; filterAt <= levels.Off; filterAt++) {
+            area.level(filterAt);
+            var filterName = $.jog.levelName(filterAt);
+            equals(area.level(), filterAt, "filter level = " + filterName);
+            var filterMsg = "filter @ " + filterName;
+            for (var logAt = levels.Fine; logAt < levels.Off; logAt++) {
+                var logMsg = "log @ " + $.jog.levelName(logAt);
+                // Test that level filtering at the area works
+                mockHandler.testLog(logAt >= filterAt, 'filter', logAt,
+                        filterMsg + ", " + logMsg);
+                // test that the level filtering at the root is unaffected
+                mockHandler.testLog(logAt >= levels.Info, '', logAt,
+                        rootMsg + ', ' + logMsg);
+            }
+        }
+    });
 };
 
 $(document).ready(runTests);
