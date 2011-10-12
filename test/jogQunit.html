@@ -40,73 +40,77 @@
 </head>
 
 <script>
-    var runTests = function() {
-        test("basic expectations", function() {
-            expect(5);
-            ok($.jog, "$.jog exists");
-            ok($.jog(), "$.jog() returns an object");
-            ok($.jog.levels, "$.jog().levels is an object");
-            ok($.jog.baseHandlers, "$.jog().baseHandlers is an object");
-            ok($.jog.newHandler, "$.jog().baseHandlers is a function");
-        });
+var runTests = function() {
+    test("basic expectations", function() {
+        expect(5);
+        ok($.jog, "$.jog exists");
+        ok($.jog(), "$.jog() returns an object");
+        ok($.jog.levels, "$.jog().levels is an object");
+        ok($.jog.baseHandlers, "$.jog().baseHandlers is an object");
+        ok($.jog.newHandler, "$.jog().baseHandlers is a function");
+    });
 
-        var levels = $.jog.levels;
-        var baseHandlers = $.jog.baseHandlers;
+    var levels = $.jog.levels;
+    var baseHandlers = $.jog.baseHandlers;
 
-        test("test setup", function() {
-            equal($.jog().level(), levels.Info);
-            var handlers = $.jog().handlers();
-            deepEqual(handlers, [baseHandlers.console]);
-            ok($.jog().toTimeString(new Date(0)).match(/-?\d\d:00:00/));
-        });
+    test("test setup", function() {
+        equal($.jog().level(), levels.Info);
+        var handlers = $.jog().handlers();
+        deepEqual(handlers, [baseHandlers.console]);
+        ok($.jog().toTimeString(new Date(0)).match(/-?\d\d:00:00/));
+    });
 
-        var trackingHandler = $.jog.newHandler("testing", {
-            publish: function(area, levelNum, levelName, when, message) {
-                this.logHistory.push([area, levelNum, levelName, when, message]);
-            },
-            alert: function(area, levelNum, levelName, when, message) {
-                this.alertHistory.push([area, levelNum, levelName, when, message]);
-            },
-            destroy: function() {
-                this.destroyed = true;
-            },
-            reset: function() {
-                this.logHistory = [];
-                this.alertHistory = [];
-                this.destroyed = false;
-            },
-            testLog: function(willAdd, area, level, message) {
-                var oldLen = this.logHistory.length;
-                $.jog(area).log(level, message);
-                var newLen = this.logHistory.length;
-                if (!willAdd) {
-                    equal(newLen, oldLen, "should not have grown");
-                } else {
-                    if (!equal(newLen, oldLen + 1, "grew by one")) return;
-                    var latest = this.logHistory[oldLen];
-                    equal(latest[0], area);
-                    equal(latest[1], level);
-                    equal(latest[4], message);
-                }
+    var mockHandler = $.jog.newHandler("testing", {
+        publish: function(area, levelNum, levelName, when, message) {
+            this.logHistory.push([area, levelNum, levelName, when, message]);
+        },
+        alert: function(area, levelNum, levelName, when, message) {
+            this.alertHistory.push([area, levelNum, levelName, when, message]);
+        },
+        destroy: function() {
+            this.destroyed = true;
+        },
+        reset: function() {
+            this.logHistory = [];
+            this.alertHistory = [];
+            this.destroyed = false;
+        },
+        testLog: function(willAdd, area, level, message) {
+            var oldLen = this.logHistory.length;
+            $.jog(area).log(level, message);
+            var newLen = this.logHistory.length;
+            if (!willAdd) {
+                equal(newLen, oldLen, "should not have grown");
+            } else {
+                if (!equal(newLen, oldLen + 1, "grew by one")) return;
+                var latest = this.logHistory[oldLen];
+                equal(latest[0], area);
+                equal(latest[1], level);
+                equal(latest[4], message);
             }
-        });
-        var msg1 = "Message 1";
-
-        function testLog(willAdd, area, level, message) {
-            trackingHandler.testLog(willAdd, area, level, message);
         }
+    });
+    var msg1 = "Message 1";
 
-        test("test the testing handler", function() {
-            $.jog().addHandlers(trackingHandler);
-            trackingHandler.reset();
-            var handlers = $.jog().handlers();
-            equal(trackingHandler.name, "testing");
-            testLog(true, 'x.y.z', levels.Info, msg1);
-            testLog(false, 'x.y.z', levels.Debug, msg1);
-        });
-    };
+    function testLog(willAdd, area, level, message) {
+        mockHandler.testLog(willAdd, area, level, message);
+    }
 
-    $(document).ready(runTests);
+    test("test the testing handler", function() {
+        $.jog().addHandlers(mockHandler);
+        mockHandler.reset();
+        var handlers = $.jog().handlers();
+        equal(mockHandler.name, "testing");
+        testLog(true, 'x.y.z', levels.Info, msg1);
+        testLog(false, 'x.y.z', levels.Debug, msg1);
+    });
+
+    test("test basic filtering", function() {
+
+    })
+};
+
+$(document).ready(runTests);
 </script>
 
 <body>
