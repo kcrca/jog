@@ -40,51 +40,107 @@
 </head>
 
 <script>
-function newMockHandler() {
-    var handler = $.jog.newHandler("mockHandler", {
-        publish: function(area, levelNum, levelName, when, message) {
-            this.ensureSetup();
-            this.logHistory.push([area, levelNum, levelName, when, message]);
-        },
-        alert: function(area, levelNum, levelName, when, message) {
-            this.ensureSetup();
-            this.alertHistory.push([area, levelNum, levelName, when, message]);
-        },
-        destroy: function() {
-            this.ensureSetup();
-            this.destroyed = true;
-        },
-        reset: function() {
-            this.logHistory = [];
-            this.alertHistory = [];
-            this.destroyed = false;
-        },
-        testLog: function(willAdd, area, level, message) {
-            this.ensureSetup();
-            var oldLen = this.logHistory.length;
-            $.jog(area).log(level, message);
-            var newLen = this.logHistory.length;
-            var msg = ': ' + message;
-            if (!willAdd) {
-                equal(newLen, oldLen, "should not have grown" + msg);
-            } else {
-                equal(newLen, oldLen + 1, "grew by one" + msg);
-                if (newLen != oldLen + 1) return;
-                var latest = this.logHistory[oldLen];
-                equal(latest[0], area, message);
-                equal(latest[1], level, message);
-                equal(latest[4], message, message);
-            }
-        },
-        ensureSetup: function() {
-            if (!this.logHistory) this.reset();
-        }
-    });
-    $.jog().handlers(handler);
-    return handler;
-}
-
 var runTests = function() {
+    var levels = $.jog.levels;
+    var baseHandlers = $.jog.baseHandlers;
+    var timeSource;
+    var mockHandlers;
+
+    function TimeSource() {
+        var count = 0;
+        this.nextTime = function() {
+            return (count++).toPrecision(4);
+        };
+        this.reset = function() {
+            count = 0;
+        }
+    }
+
+    function newMockHandler(suffix) {
+        suffix = suffix ? '-' + suffix : '';
+        var handler = $.jog.newHandler("mockHandler" + suffix, {
+            publish: function(area, levelNum, levelName, when, message) {
+                this.ensureSetup();
+                this.logHistory.push(
+                        [area, levelNum, levelName, when, message]);
+            },
+            alert: function(area, levelNum, levelName, when, message) {
+                this.ensureSetup();
+                this.alertHistory.push(
+                        [area, levelNum, levelName, when, message]);
+            },
+            destroy: function() {
+                this.ensureSetup();
+                this.destroyed = true;
+            },
+            reset: function() {
+                this.logHistory = [];
+                this.alertHistory = [];
+                this.destroyed = false;
+            },
+            testLog: function(willAdd, area, level, message) {
+                this.ensureSetup();
+                var oldLen = this.logHistory.length;
+                this.markCount();
+                $.jog(area).log(level, message);
+                var newLen = this.logHistory.length;
+                var msg = ': ' + message;
+                if (!willAdd) {
+                    this.checkChange(0, msg);
+                } else {
+                    this.checkChange(1, msg);
+                    if (newLen != oldLen + 1) return;
+                    var latest = this.logHistory[oldLen];
+                    equal(latest[0], area, message);
+                    equal(latest[1], level, message);
+                    equal(latest[4], message, message);
+                }
+            },
+            ensureSetup: function() {
+                if (!this.logHistory) this.reset();
+            },
+            markCount: function() {
+                this.markedCount = this.logHistory.length;
+            },
+            checkChange: function(change, message) {
+                equal(this.markedCount + change, this.logHistory.length,
+                        message);
+            },
+            toString: function() {
+                var lines = [this._handlerId];
+                $.each(this.logHistory, function(index, value) {
+                    lines.push(value.toString());
+                });
+                return lines.join('\n');
+            }
+        });
+        $.jog().handlers(handler);
+        mockHandlers.push(handler);
+        return handler;
+    }
+
+    function initMocks() {
+        mockHandlers = [];
+
+        var rootArea = $.jog();
+        rootArea.handlers(baseHandlers.console);
+        rootArea.level(levels.Info);
+        rootArea.alertLevel(levels.Alert);
+
+        timeSource = new TimeSource();
+        rootArea.toTimeString = function() {
+            return timeSource.nextTime();
+        };
+
+    }
+
+    function resetMocks() {
+        for (var i = 0; i < mockHandlers.length; i++) {
+            mockHandlers[i].reset();
+        }
+        timeSource.reset();
+    }
+
     test("basic expectations", function() {
         expect(5);
         ok($.jog, "$.jog exists");
@@ -94,9 +150,6 @@ var runTests = function() {
         ok($.jog.newHandler, "$.jog().baseHandlers is a function");
     });
 
-    var levels = $.jog.levels;
-    var baseHandlers = $.jog.baseHandlers;
-
     test("test setup", function() {
         equal($.jog().level(), levels.Info);
         var handlers = $.jog().handlers();
@@ -105,6 +158,7 @@ var runTests = function() {
     });
 
     test("test the mock handler", function() {
+        initMocks();
         var mockHandler = newMockHandler();
         var msg1 = "Message 1";
         $.jog().handlers(mockHandler);
@@ -117,6 +171,7 @@ var runTests = function() {
     });
 
     test("test basic filtering", function() {
+        initMocks();
         var mockHandler = newMockHandler();
         var area = $.jog('filter');
         var rootMsg = 'root @ ' + $.jog.levelName(levels.Info);
@@ -135,6 +190,106 @@ var runTests = function() {
                         rootMsg + ', ' + logMsg);
             }
         }
+    });
+
+    test("test handler inheritence", function() {
+        initMocks();
+
+        /*
+         * First we try out what happens if we have a unique handler at each
+         * area in a hierarchy.
+         */
+        // One handler to add at each area
+        var h = newMockHandler('1');
+        var hX = newMockHandler('2');
+        var hXY = newMockHandler('3');
+
+        // Set one handler at each area
+        var area = $.jog();
+        var areaX = $.jog('x');
+        var areaXY = $.jog('x.y');
+        area.handlers(h);
+        areaX.handlers(hX);
+        areaXY.handlers(hXY);
+
+        // verify settings
+        var handlers = area.handlers;
+        deepEqual(area.handlers(), [h]);
+        deepEqual(areaX.handlers(), [hX]);
+        deepEqual(areaXY.handlers(), [hXY]);
+
+        function logMessages(assumeEquals) {
+            // Log one message at each area
+            area.info('{root}');
+            areaX.info('x');
+            areaXY.info('x.y');
+
+            if (assumeEquals) {
+                // Verify the right number of messages at each area
+                equals(h.logHistory.length, 3);
+                equals(hX.logHistory.length, 2);
+                equals(hXY.logHistory.length, 1);
+            }
+        }
+
+        logMessages(true);
+
+        // Remember what happened
+        var hStr = h.toString();
+        var hXStr = hX.toString();
+        var hXYStr = hXY.toString();
+
+        /*
+         * Next we try what happens if we turn off inheritance of handlers.
+         */
+        resetMocks();
+        
+        areaX.useParentHandlers(false);
+        logMessages();
+        notEqual(h.toString(), hStr);
+        equal(h.logHistory.length, 1);
+        equal(hX.toString(), hXStr);
+        equal(hXY.toString(), hXYStr);
+
+        // put it back for the next test
+        areaX.useParentHandlers(true);
+
+        /*
+         * Then we try out what happens if we have duplicate handlers in the
+         * hierarchy, which should be the same as the first run.
+         */
+        resetMocks();
+
+        // Set all handler at each area
+        area.handlers(h);
+        areaX.handlers(hX);
+        areaX.addHandlers(h);
+        areaXY.handlers(h, hX, hXY);
+
+        // verify settings
+        handlers = area.handlers;
+        equal(area.handlers().length, 1);
+        equal(areaX.handlers().length, 2);
+        equal(areaXY.handlers().length, 3);
+
+        logMessages(true);
+
+        // verify the same things happened
+        equal(h.toString(), hStr);
+        equal(hX.toString(), hXStr);
+        equal(hXY.toString(), hXYStr);
+
+        /*
+         * Finally we try what happens if we turn off inheritance of handlers
+         * when there are duplicates, so it should not make a difference.
+         */
+        resetMocks(false);
+        
+        areaX.useParentHandlers(false);
+        logMessages();
+        equal(h.toString(), hStr);
+        equal(hX.toString(), hXStr);
+        equal(hXY.toString(), hXYStr);
     });
 };
 
