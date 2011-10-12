@@ -57,7 +57,7 @@ currently debugging the options area of your code you could:</p>
 <p>By default this puts informational-level log messages on the console, but
 you can configure messages to go onto the page, or in a popup window, or any
 place you like:</p>
-<pre>$.jog('options').addHandlers($.jog.baseHandlers.popup);</pre>
+<pre>$.jog('options').addHandler($.jog.baseHandlers.popup);</pre>
 
 <p>This adds a handler for options messages that puts log messages in a popup
 window, as well as on the console.</p>
@@ -206,8 +206,8 @@ way:</p>
 
 <p>For example, if you want to change the root area's default handler to the
 html handler, you could do this:</p>
-<pre>$.jog().addHandlers($.jog.baseHandlers.html);
-$.jog().removeHandlers($.jog.baseHandlers.console);</pre>
+<pre>$.jog().addHandler($.jog.baseHandlers.html);
+$.jog().removeHandler($.jog.baseHandlers.console);</pre>
 
 <p>Or more simply, you could just replace the list of handlers:</p>
 <pre>$.jog().handlers($.jog.baseHandlers.html);</pre>
@@ -258,7 +258,11 @@ placed:</p>
             <code>jog-area-</code><em>areaName</em> for the level and area of
             the individual log. For example, in an Info message in the ui area,
             they would be <code>log-level-Info</code> and
-            <code>log-area-ui</code>. </dd>
+            <code>log-area-ui</code>. Note: When used as part of a class name,
+            the area name has all its dot separators replaced with dashes
+            because CSS doesn't handle dots in class names easily; therefore
+            table rows for <code>ui.prefs</code> would by default have the
+            class name <code>jog-area-ui-prefs</code>.</dd>
         <dt><code>htmlId</code></dt>
           <dd>The ID of the node which will contain the log table, which will
             be created if it doesn't exist. When the first message is to be
@@ -271,13 +275,37 @@ placed:</p>
             <code>idPrefix</code> is untouched is <code>jog-html</code>. </dd>
         <dt><code>insertHtml</code></dt>
           <dd>The first time a log message needs to be displayed, if a node
-            with the correct ID (htmlId) cannot be found on the page, this
-            function will be called to insert it, in the context of the handler
-            (so this will be a reference to the handler). The default is to
-            append a <code>&lt;div&gt;</code> to the body of the page. The
-            function must return the node to use; the handler will set the ID
-            and class as required. </dd>
+            with the correct ID (<code>htmlId</code>) cannot be found on the
+            page, this function will be called to insert it, in the context of
+            the handler (so this will be a reference to the handler). The
+            default is to append a <code>&lt;div&gt;</code> to the body of the
+            page. The function must return the node to use; the handler will
+            set the ID and class as required. </dd>
       </dl>
+    </dd>
+    <dd>It may help to have this described from the top down. The following is
+      what the logging area would look like if the html handler was configured
+      with the idPrefix of <code>"jogID"</code> and the classPrefix of
+      <code>"jogClass"</code>, with one log row from the
+      <code>"ui.prefs"</code> area:</dd>
+    <dd><pre style="margin-left:2em;">&lt;div id="jogID-html"&gt;
+  &lt;table class="jogClass-table" id="jogID-table"&gt;
+    &lt;tbody&gt;
+      &lt;tr class="jogClass-header" id="jogID-header"&gt;
+        &lt;th&gt;Area&lt;/th&gt;
+        &lt;th&gt;Level&lt;/th&gt;
+        &lt;th&gt;When&lt;/th&gt;
+        &lt;th&gt;Message&lt;/th&gt;
+      &lt;/tr&gt;
+      &lt;tr class="jogClass-level-Info jogClass-area-ui jogClass-area-ui-prefs"&gt;
+        &lt;td class="jogClass-area"&gt;ui.prefs&lt;/td&gt;
+        &lt;td class="jogClass-level"&gt;Info&lt;/td&gt;
+        &lt;td class="jogClass-when"&gt;17:36:09&lt;/td&gt;
+        &lt;td class="jogClass-message"&gt;Read Me!&lt;/td&gt;
+      &lt;/tr&gt;
+    &lt;/tbody&gt;
+  &lt;/table&gt;
+&lt;/div&gt;</pre>
     </dd>
   <dt><code>popup</code></dt>
     <dd>A new browser window will be popped up, and inside that window,
@@ -334,13 +362,33 @@ threshold level:</p>
 <p>And you can use the level also to turn them off:</p>
 <pre>$.jog('ui').alertLevel($.jog.Off);</pre>
 
+<h3>Advanced Topic: Copying Handlers</h3>
+
+<p>There are two ways to get different handlers. You can make copies of other
+handles and modify their settings, or you can create your own kinds of
+handlers.</p>
+
+<p>Copying an existing handler is a way to get a handler of the same kind but
+with different configurations. For example, you might want to put messages from
+different areas in different HTML tables:</p>
+<pre>var otherHtml = $.jog.baseHandlers.html.copy('otherHtml');
+otherHtml.config({htmlId: 'otherHtmlArea'});
+$.jog().addHandler($.jog.baseHandlers.html);
+$.jog('ui').addHandler(otherHtml);
+$.jog('ui').useParentHandlers(false);</pre>
+
+<p>This would put <code>ui</code> messages into a table under the node with the
+id <code>otherHtmlArea</code>, apart from all others. If you did not turn off
+using parent handlers, the log messages would appear in both places.</p>
+
 <h3>Advanced Topic: Custom Handlers</h3>
 
-<p>You can write your own handlers. The <code>newHandler()</code> function is
-core to doing it:</p>
+<p>You can also write your own handler types. The <code>newHandler()</code>
+function is core to doing it:</p>
 <pre>var myHandler = $.jog.newHandler(name, {
-    publish: function(area, levelNum, levelName, when, message) { ... }
-});</pre>
+    publish: function(area, levelNum, level, when, message) { ... }
+});
+</pre>
 
 <p>The <code>newHandler()</code> method creates a new handler object with the
 given name, and then copies the properties of the second parameter to this
@@ -352,6 +400,15 @@ settings to result in immediate action, rather than have each method checking
 to see if the settings have been changed since the last time some method was
 invoked on the handler.) The name is required, but need not be unique.</p>
 
+<p>By default, the handler's <code>copy()</code> method uses a deep
+<code>$.extend()</code> to make a copy. Your handler may require other things
+to be reset; for example, if your code caches a value for its work, a copy
+would probably need to start with an empty cache instead of keeping the cached
+values. If this is true, your handler class must provide a
+<code>copyCleanup()</code> method that will be called before
+<code>copy()</code> returns. (If for some reason your handler cannot support
+multiple copies, <code>copyCleanup()</code> can throw an exception.)</p>
+
 <p>The <code>publish()</code> method is what is called by <code>log()</code>,
 and is required of all handlers. The parameters are those from the
 <code>log()</code> call, with <code>when</code> being the string version of the
@@ -360,8 +417,6 @@ time, appropriately formatted.</p>
 <p>If you want your handler to also provide alerts, it should also support an
 <code>alert()</code> method that takes the same parameters as
 <code>publish()</code>. </p>
-
-<p>If what you need is to have a base handler with two different settings</p>
 
 <h3>The API</h3>
 
