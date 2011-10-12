@@ -407,8 +407,15 @@
     this._useParentHandlers = true;
     this._lineage = []; // the cumulative area names from root to me (see below)
 
+    function notDerived() {
+      if (self.isDerived) throw "Operation not allowed on derived area";
+    }
+
     this.useParentHandlers = function(value) {
-      if (value != undefined) this._useParentHandlers = value;
+      if (value != undefined) {
+        notDerived();
+        this._useParentHandlers = value;
+      }
       return this._useParentHandlers;
     };
 
@@ -435,13 +442,14 @@
     // maybe not worth the complexity. (something like how swing components
     // invalidate their layout and those of their descendants if they are
     // changed, and then are recalculated if they are needed but invalid.)
-    function buildAreaInfo() {
+    this.derive = function() {
       // We start at the top (root), and then merge in more and more specific
       // values.
       var info = $.extend(true, {}, areaRoot);
+      this.isDerived = true;
 
-      for (var i = 0; i < self._lineage.length; i++) {
-        var areaName = self._lineage[i];
+      for (var i = 0; i < this._lineage.length; i++) {
+        var areaName = this._lineage[i];
         var areaInfo = areas[areaName];
         if (areaInfo) {
           // If this area cuts off its parent, use only its own handlers
@@ -452,7 +460,7 @@
         }
       }
       return info;
-    }
+    };
 
     // The actual logging function
     this.log = function(level, message) {
@@ -461,19 +469,20 @@
       // Special case, and not just for speed -- An Off shouldn't be shown
       if (levelNum == levels.Off) return false;
 
-      var areaInfo = buildAreaInfo();
-      if (levelNum < areaInfo._level) return false;
+      var derived = (this.isDerived ? this : this.derive());
+      if (levelNum < derived._level) return false;
 
       // This is how the user can check if a certain level would be logged
       if (!message) return true;
 
-      var alertLevelNum = areaInfo._alertLevel;
+      notDerived();
+      var alertLevelNum = derived._alertLevel;
 
       // Generate the messages
       var levelName = levelNumToName[levelNum];
-      var when = areaInfo.toTimeString(new Date());
-      for (var id in areaInfo._handlers) {
-        var handler = areaInfo._handlers[id];
+      var when = derived.toTimeString(new Date());
+      for (var id in derived._handlers) {
+        var handler = derived._handlers[id];
         handler.publish(this.name, levelNum, levelName, when, message);
         if (levelNum >= alertLevelNum && handler.alert) {
           handler.alert(this.name, levelNum, levelName, when, message);
@@ -484,17 +493,24 @@
 
     this.level = function(level) {
       // we check with "arguments.length" because "undefined" is a valid value
-      if (arguments.length == 1) this._level = toLevelNum(level);
+      if (arguments.length == 1) {
+        notDerived();
+        this._level = toLevelNum(level);
+      }
       return this._level;
     };
 
     this.alertLevel = function(level) {
       // we check with "arguments.length" because "undefined" is a valid value
-      if (arguments.length == 1) this._alertLevel = toLevelNum(level);
+      if (arguments.length == 1) {
+        notDerived();
+        this._alertLevel = toLevelNum(level);
+      }
       return this._alertLevel;
     };
 
     this.addHandlers = function() {
+      notDerived();
       for (var i = 0; i < arguments.length; i++) {
         var handler = arguments[i];
         this._handlers[handler._handlerId] = handler;
@@ -502,6 +518,7 @@
     };
 
     this.removeHandlers = function() {
+      notDerived();
       for (var i = 0; i < arguments.length; i++) {
         var handler = arguments[i];
         delete this._handlers[handler._handlerId];
@@ -510,6 +527,7 @@
 
     this.handlers = function() {
       if (arguments.length != 0) {
+        notDerived();
         // set the list of handlers
         this._handlers = {};
         this.addHandlers.apply(this, arguments);
@@ -536,6 +554,7 @@
     }
 
     this.destroy = function() {
+      notDerived();
       for (var id in this._handlers) {
         var handler = this._handlers[id];
         if (handler.destroy) {
