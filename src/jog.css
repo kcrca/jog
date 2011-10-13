@@ -44,12 +44,14 @@
 }
 
 /* A light-red background for Severe log rows ... */
-#jog-table tr.jog-level-Severe > td {
+#jog-table tr.jog-level-Severe > td,
+#jog-table tr.jog-level-Alert > td {
     background: #ff9999;
 }
 
 /* ... except for the message itself (it makes it easier to read the message) */
-#jog-table tr.jog-level-Severe > td.jog-message {
+#jog-table tr.jog-level-Severe > td.jog-message,
+#jog-table tr.jog-level-Alert > td.jog-message {
     background: inherit;
 }
 

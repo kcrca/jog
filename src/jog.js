@@ -60,21 +60,19 @@
     this.name = name;
 
     this._handlerId = newUniqueId(name);
+    this._settings = {};
 
     // The method that modifies the configuration fields 
     this.config = function(properties, override) {
       override = override != undefined ? override : false;
-      if (!this._settings) {
-        this._settings = {};
+      if (properties) {
+        if (override) {
+          this._settings = $.extend({}, properties);
+        } else {
+          $.extend(this._settings, properties);
+        }
       }
-      if (!properties) {
-        return $.extend({}, this._settings);
-      }
-      if (override) {
-        this._settings = $.extend({}, properties);
-      } else {
-        $.extend(this._settings, properties);
-      }
+      return $.extend({}, this._settings);
     };
 
     this.copy = function(name) {
@@ -86,6 +84,11 @@
       }
       return dup;
     };
+
+    this.level = function(level) {
+      if (level != undefined) this._settings.level = level;
+      return this._settings.level;
+    }
   }
 
   function newHandler(name, properties) {
@@ -322,8 +325,13 @@
         }
         console[method](prefix + area + sep + levelName + sep + when + sep +
             message);
+      }
+    }),
+    alert: newHandler("alert", {
+      _settings: {
+        level: levels.Alert
       },
-      alert: function(area, levelNum, levelName, when, message) {
+      publish: function(area, levelNum, levelName, when, message) {
         message = messageText(message);
         alert("Area: " + area + "\n" + "Level: " + levelName + "\n" + "When: " +
             when + "\n" + "Message: " + message + "\n");
@@ -361,8 +369,7 @@
   var areas = {};
   var areaRoot = new Area('');
   areaRoot.level(levels.Info);
-  areaRoot.alertLevel(levels.Alert);
-  areaRoot.addHandlers(knownHandlers.console);
+  areaRoot.handlers(knownHandlers.console, knownHandlers.alert);
   areaRoot.toTimeString = defaultTimeFormat;
 
   // Reliably convert any string or number to its level number, if it has one
@@ -487,16 +494,14 @@
       if (!message) return true;
 
       notDerived();
-      var alertLevelNum = derived._alertLevel;
-
       // Generate the messages
       var levelName = levelNumToName[levelNum];
       var when = derived.toTimeString(new Date());
       for (var id in derived._handlers) {
         var handler = derived._handlers[id];
-        handler.publish(this.name, levelNum, levelName, when, message);
-        if (levelNum >= alertLevelNum && handler.alert) {
-          handler.alert(this.name, levelNum, levelName, when, message);
+        var handlerLevel = handler.level();
+        if (!handlerLevel || handlerLevel <= levelNum) {
+          handler.publish(this.name, levelNum, levelName, when, message);
         }
       }
       return true;
@@ -509,15 +514,6 @@
         this._level = toLevelNum(level);
       }
       return this._level;
-    };
-
-    this.alertLevel = function(level) {
-      // we check with "arguments.length" because "undefined" is a valid value
-      if (arguments.length == 1) {
-        notDerived();
-        this._alertLevel = toLevelNum(level);
-      }
-      return this._alertLevel;
     };
 
     this.addHandlers = function() {

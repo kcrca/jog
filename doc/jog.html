@@ -176,17 +176,26 @@ whose name you expect to be unique to your code.</p>
 <p>Once a log message has passed the level threshold test, where does it go?
 The answer is that you can configure that.</p>
 
-<p><em>Handlers</em> are objects that take messages and presents them. The
-default handler shows messages on the consolve via <code>console.log</code>:</p>
+<p><em>Handlers</em> are objects that take messages and presents them. By
+default jog includes a handler that shows messages on the consolve via
+<code>console.log()</code>:</p>
 <pre>ui - Info - 19:12:12 - The median value is 4.3</pre>
 
 <p>These are the components of the displayed log message: the area, level, the
 current time, and message.</p>
 
-<p>The base handler objects that are provided by jog are:</p>
+<p>The other default handler is the alert handler, which pops up an alert
+window visible to the user. This would be very annoying for most messages,
+which is a good example of why a handler can also have its own threshold level
+of use. The alert handler's threshold is Alert; any messages below this level
+are ignored by the handler.</p>
+
+<p>The known handler objects that are provided by jog are:</p>
 <dl>
   <dt>console</dt>
-    <dd>Writes messages to <code>console.log</code>.</dd>
+    <dd>Writes messages to <code>console.log()</code>.</dd>
+  <dt>alert</dt>
+    <dd>Pops up an alert message via <code>alert()</code>.</dd>
   <dt>html</dt>
     <dd>Writes messages to table on the current page.</dd>
   <dt>popup</dt>
@@ -201,17 +210,17 @@ The handlers are asked (in any order) to do their job.</p>
 
 <p>Again, the root area is the place where the defaults are. In this case, the
 set of handlers at the root is what is used by most areas, and its default is
-solely the console handler. You can access the basic handlers listed above this
-way:</p>
+the console and alert handlers.</p>
+
+<p>You can access the known handlers this way:</p>
 <pre>$.jog.knownHandlers</pre>
 
-<p>For example, if you want to change the root area's default handler to the
+<p>For example, if you want to change the root area's handlers to bo only the
 html handler, you could do this:</p>
-<pre>$.jog().addHandler($.jog.knownHandlers.html);
-$.jog().removeHandler($.jog.knownHandlers.console);</pre>
-
-<p>Or more simply, you could just replace the list of handlers:</p>
 <pre>$.jog().handlers($.jog.knownHandlers.html);</pre>
+
+<p>Or if you simply wanted to add it to the root area's handlers:</p>
+<pre>$.jog().addHandler($.jog.knownHandlers.html);</pre>
 
 <p>You can configure these handler objects via their <code>config()</code>
 methods, which take property objects. For example, the <code>html</code>
@@ -219,7 +228,12 @@ handler can be told the ID of the HTML element inside which the log should be
 placed:</p>
 <pre>$.jog.knownHandlers.html.config({htmlId: 'putTheLogHere'});</pre>
 
-<p>Here are the base handlers and their configurable values:</p>
+<p>The handler's threshold level is configured this way as well. If you want
+alerts for all messages at or above Warning, you could say:</p>
+<pre>$.jog.knownHandlers.alert.config({level: $.jog.Warning});</pre>
+
+<p>The level can be set on any handler. Here are the base handlers and their
+non-standard configurable values:</p>
 <dl>
   <dt><code>console</code></dt>
     <dd>Each log message is printed on the console using
@@ -234,6 +248,9 @@ placed:</p>
             <code>" - "</code>. </dd>
       </dl>
     </dd>
+  <dt><code>alert</code></dt>
+    <dd>Each log message is show to the user with <code>alert()</code>. (This
+      handler has no custom configurations.)</dd>
   <dt><code>html</code></dt>
     <dd>Each message is appended to a table on the current page. By default,
       when the first log message passes the level filter and is to be

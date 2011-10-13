@@ -46,7 +46,8 @@ var runTests = function() {
     QUnit.config.reorder = false;
 
     var levels = $.jog.levels;
-    var baseHandlers = $.jog.knownHandlers;
+    var knownHandlers = $.jog.knownHandlers;
+    var defaultHandlers = $.jog().handlers();
     var timeSource;
     var mockHandlers = [];
 
@@ -72,31 +73,25 @@ var runTests = function() {
                 this.logHistory.push(
                         [area, levelNum, levelName, when, message]);
             },
-            alert: function(area, levelNum, levelName, when, message) {
-                this.ensureSetup();
-                this.alertHistory.push(
-                        [area, levelNum, levelName, when, message]);
-            },
             destroy: function() {
                 this.ensureSetup();
                 this.destroyed = true;
             },
             reset: function() {
                 this.logHistory = [];
-                this.alertHistory = [];
                 this.destroyed = false;
             },
-            testLog: function(addLog, addAlert, area, level, message) {
+            testLog: function(addLog, area, level, message) {
                 this.ensureSetup();
                 var oldLen = this.logHistory.length;
-                this.markCounts();
+                this.markCount();
                 $.jog(area).log(level, message);
                 var newLen = this.logHistory.length;
                 var msg = ': ' + message;
                 if (!addLog) {
-                    this.checkChange('log', 0, msg);
+                    this.checkChange(0, msg);
                 } else {
-                    this.checkChange('log', 1, msg);
+                    this.checkChange(1, msg);
                     if (newLen != oldLen + 1) return;
                     var latest = this.logHistory[oldLen];
                     equal(latest[0], area, message);
@@ -107,17 +102,12 @@ var runTests = function() {
             ensureSetup: function() {
                 if (!this.logHistory) this.reset();
             },
-            history:function (which) {
-                return this[which + "History"];
+            markCount: function() {
+                this.ensureSetup();
+                this.mark = this.logHistory.length;
             },
-            markCounts: function() {
-                if (!this.markedCounts) this.markedCounts = {};
-                this.markedCounts['log'] = this.history('log').length;
-                this.markedCounts['alert'] = this.history('alert').length;
-            },
-            checkChange: function(which, change, message) {
-                equal(this.markedCounts[which] + change,
-                        this.history(which).length, message);
+            checkChange: function(change, message) {
+                equal(this.mark + change, this.logHistory.length, message);
             },
             toString: function() {
                 var lines = [this._handlerId];
@@ -135,15 +125,13 @@ var runTests = function() {
         mockHandlers = [];
 
         var rootArea = $.jog();
-        rootArea.handlers(baseHandlers.console);
+        rootArea.handlers(knownHandlers.console);
         rootArea.level(levels.Info);
-        rootArea.alertLevel(levels.Alert);
 
         timeSource = new TimeSource();
         rootArea.toTimeString = function() {
             return timeSource.nextTime();
         };
-
     }
 
     function resetMocks() {
@@ -164,8 +152,8 @@ var runTests = function() {
 
     test("test setup", function() {
         equal($.jog().level(), levels.Info);
-        var handlers = $.jog().handlers();
-        deepEqual(handlers, [baseHandlers.console]);
+        deepEqual(defaultHandlers.sort(),
+                [knownHandlers.console, knownHandlers.alert].sort());
         ok($.jog().toTimeString(new Date(0)).match(/-?\d\d:00:00/));
     });
 
@@ -178,9 +166,9 @@ var runTests = function() {
         $.jog().handlers(h);
         var handlers = $.jog().handlers();
         ok(handlers[0] === h);
-        h.testLog(false, false, 'x.y.z', levels.Debug, msg1);
-        h.testLog(true, false, 'x.y.z', levels.Info, msg1);
-        h.testLog(true, true, 'x.y.z', levels.Alert, msg1);
+        h.testLog(false, 'x.y.z', levels.Debug, msg1);
+        h.testLog(true, 'x.y.z', levels.Info, msg1);
+        h.testLog(true, 'x.y.z', levels.Alert, msg1);
     });
 
     // Also implicitly tests time formatting, since we use a custom function
@@ -191,35 +179,41 @@ var runTests = function() {
         var area = $.jog('filter');
 
         equals($.jog().level(), levels.Info, "root log filter");
-        equals($.jog().alertLevel(), levels.Alert, "root alert filter");
 
-        var rootLogMsg = 'root log @ ' + $.jog.levelName(levels.Info);
-        var rootAlertMsg = 'root alert @ ' + $.jog.levelName(levels.Alert);
-        for (var logFilter = levels.Fine; logFilter <= levels.Off;
-             logFilter++) {
-            var alertFilter = levels.Off - logFilter;
-            area.level(logFilter);
-            area.alertLevel(alertFilter);
+        var rootMsg = 'root log @ ' + $.jog.levelName(levels.Info);
+        for (var filterAt = levels.Fine; filterAt <= levels.Off; filterAt++) {
+            area.level(filterAt);
 
-            var logFilterMsg = "log filter @ " + $.jog.levelName(logFilter);
-            var alertFilterMsg = "alert filter @ " +
-                    $.jog.levelName(alertFilter);
-            equals(area.level(), logFilter, logFilterMsg);
-            equals(area.alertLevel(), alertFilter, alertFilterMsg);
+            var logFilterMsg = "log filter @ " + $.jog.levelName(filterAt);
+            equals(area.level(), filterAt, logFilterMsg);
 
             for (var logAt = levels.Fine; logAt < levels.Off; logAt++) {
-                var alertAt = levels.Alert - logAt;
                 var logMsg = "log @ " + $.jog.levelName(logAt);
 
                 // Test that level filtering at the area works
-                h.testLog(logAt >= logFilter, alertAt >= alertFilter, 'filter',
-                        logAt, logFilterMsg + ", " + logMsg);
+                h.testLog(logAt >= filterAt, 'filter', logAt,
+                        logFilterMsg + ", " + logMsg);
 
                 // test that the level filtering at the root is unaffected
-                h.testLog(logAt >= levels.Info, alertAt >= levels.Alert, '',
-                        logAt, rootLogMsg + ', ' + logMsg);
+                h.testLog(logAt >= levels.Info, '', logAt,
+                        rootMsg + ', ' + logMsg);
             }
         }
+    });
+
+    // Also tests $.jog.levels having level names, and that log() can take a
+    // level name as well as a level number.
+    test("level filtering", function() {
+        initMocks();
+        var h = newMockHandler();
+        $.jog().handlers(h);
+        var area = $.jog('levelFilter');
+        h.level(levels.Alert);
+        h.markCount();
+        for (var levelName in $.jog.levels) {
+            area.log(levelName, "log message");
+        }
+        h.checkChange(1, 'handler level also filters');
     });
 
     test("test handler inheritence", function() {
@@ -341,7 +335,7 @@ var runTests = function() {
     });
 
     test("html handler", function() {
-        var html = baseHandlers.html;
+        var html = knownHandlers.html;
 
         var root = $.jog();
         root.level(levels.Info);
