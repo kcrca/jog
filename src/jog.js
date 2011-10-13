@@ -189,10 +189,18 @@
 
           table = setup($('<table/>'), 'table');
           var header = setup($('<tr/>'), 'header');
-          header.append($('<th/>').text('Area'));
-          header.append($('<th/>').text('Level'));
-          header.append($('<th/>').text('When'));
-          header.append($('<th/>').text('Message'));
+
+          function headerCell(colName) {
+            var cell = $('<th/>');
+            cell.text(colName);
+            cell.attr('id', idPrefix + '-' + colName.toLowerCase());
+            header.append(cell);
+          }
+
+          headerCell('Area');
+          headerCell('Level');
+          headerCell('When');
+          headerCell('Message');
 
           top.append(table);
           table.append(header);

@@ -364,7 +364,7 @@ function domStrEqual(expected, actual, message) {
     expStr = orderAttributes(expStr);
     expStr = expStr.replace(/id="Expected/g, 'id="');
     actStr = orderAttributes(actStr);
-    
+
     equal(expStr, actStr, message);
 }
 
@@ -405,11 +405,11 @@ $(document).ready(runTests);
 <div id="ExpectedjogID-html" class="jogClass-html">
     <table class="jogClass-table" id="ExpectedjogID-table">
         <tbody>
-        <tr class="jogClass-header" id="ExpectedjogID-header">
-            <th>Area</th>
-            <th>Level</th>
-            <th>When</th>
-            <th>Message</th>
+        <tr class="jogClass-header" id="jogID-header">
+            <th id="jogID-area">Area</th>
+            <th id="jogID-level">Level</th>
+            <th id="jogID-when">When</th>
+            <th id="jogID-message">Message</th>
         </tr>
         <tr class="jogClass-level-Info jogClass-area-ui jogClass-area-ui-prefs">
             <td class="jogClass-area">ui.prefs</td>

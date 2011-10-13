@@ -38,6 +38,11 @@
     text-align: left;
 }
 
+#jog-when,
+#jog-table .jog-when {
+    text-align: right;
+}
+
 /* A light-red background for Severe log rows ... */
 #jog-table tr.jog-level-Severe > td {
     background: #ff9999;
