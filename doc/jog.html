@@ -28,6 +28,9 @@
   <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
   <title>jog</title>
   <meta name="generator" content="Amaya, see http://www.w3.org/Amaya/">
+  <style>
+ .apiEntry { width: 33% }
+ .apiDescription { width: 67% }</style>
 </head>
 
 <body>
@@ -98,6 +101,13 @@ method on the area object, such as:</p>
 <p>Generally this form is easier to read and takes less space, but you might
 sometimes need the level-specifying <code>log()</code> function when you are
 writing code where the level must come from a variable.</p>
+
+<p>Wherever a level is passed to jog, the preceded thing to pass is the number
+from <code>$.jog</code>, such as <code>$.jog.Debug</code>. But you can also
+pass the number as a string, or the name of the level, or any string that
+starts with the first character of the level. Case is always ignored. These
+string versions can be useful to you at times, but the numbers are faster, and
+keeping the overhead of logging down is important.</p>
 
 <p>Areas can have sub-areas. This is a good way to isolate your log messages
 from other people's code, and to break up your own log messages into logical
@@ -177,7 +187,7 @@ whose name you expect to be unique to your code.</p>
 The answer is that you can configure that.</p>
 
 <p><em>Handlers</em> are objects that take messages and presents them. By
-default jog includes a handler that shows messages on the consolve via
+default jog includes a handler that shows messages on the console via
 <code>console.log()</code>:</p>
 <pre>ui - Info - 19:12:12 - The median value is 4.3</pre>
 
@@ -215,12 +225,12 @@ the console and alert handlers.</p>
 <p>You can access the known handlers this way:</p>
 <pre>$.jog.knownHandlers</pre>
 
-<p>For example, if you want to change the root area's handlers to bo only the
+<p>For example, if you want to change the root area's handlers to be only the
 html handler, you could do this:</p>
 <pre>$.jog().handlers($.jog.knownHandlers.html);</pre>
 
 <p>Or if you simply wanted to add it to the root area's handlers:</p>
-<pre>$.jog().addHandler($.jog.knownHandlers.html);</pre>
+<pre>$.jog().addhandlers($.jog.knownHandlers.html);</pre>
 
 <p>You can configure these handler objects via their <code>config()</code>
 methods, which take property objects. For example, the <code>html</code>
@@ -232,8 +242,8 @@ placed:</p>
 alerts for all messages at or above Warning, you could say:</p>
 <pre>$.jog.knownHandlers.alert.config({level: $.jog.Warning});</pre>
 
-<p>The level can be set on any handler. Here are the base handlers and their
-non-standard configurable values:</p>
+<p>The level can be set on any handler. Here are the handlers provided by jog,
+and their non-standard configurable values:</p>
 <dl>
   <dt><code>console</code></dt>
     <dd>Each log message is printed on the console using
@@ -359,27 +369,6 @@ root area, and can be overridden there:</p>
 <p>The when parameter is a <code>Date</code> object whose time is to be
 formatted.</p>
 
-<h3>Advanced Topic: Alerts</h3>
-
-<p>Some messages are so critical that you want to make sure they are more
-forcefully thrust upon the user. This is the purpose of the <code>Alert</code>
-log level. This is a second threshold of an area -- the level at which messages
-will be displayed as alerts. Any log at this level or above will be logged not
-only as a regular log message but also will be given to each active handler to
-display as an alert. If the handler supports this feature, it will perform an
-appropriate action.</p>
-<pre>$.jog('ui').alert('Cannot store user preferences');</pre>
-
-<p>The only base handler that supports alerts is the <code>console</code>
-handler, which will display the log message via an <code>alert()</code>.</p>
-
-<p>You can change the alert level for an area like you can the regular
-threshold level:</p>
-<pre>$.jog('ui').alertLevel($.jog.Severe);</pre>
-
-<p>And you can use the level also to turn them off:</p>
-<pre>$.jog('ui').alertLevel($.jog.Off);</pre>
-
 <h3>Advanced Topic: Derived Level Information</h3>
 
 <p>When you ask for values on a level, you get the values set for that level
@@ -408,8 +397,8 @@ with different configurations. For example, you might want to put messages from
 different areas in different HTML tables:</p>
 <pre>var otherHtml = $.jog.knownHandlers.html.copy('otherHtml');
 otherHtml.config({htmlId: 'otherHtmlArea'});
-$.jog().addHandler($.jog.knownHandlers.html);
-$.jog('ui').addHandler(otherHtml);
+$.jog().addHandlers($.jog.knownHandlers.html);
+$.jog('ui').addhandlers(otherHtml);
 $.jog('ui').useParentHandlers(false);</pre>
 
 <p>This would put <code>ui</code> messages into a table under the node with the
@@ -448,88 +437,106 @@ and is required of all handlers. The parameters are those from the
 <code>log()</code> call, with <code>when</code> being the string version of the
 time, appropriately formatted.</p>
 
-<p>If you want your handler to also provide alerts, it should also support an
-<code>alert()</code> method that takes the same parameters as
-<code>publish()</code>. </p>
+<h3>Reference: The API</h3>
 
-<h3>The API</h3>
+<p>General API notes:</p>
+<ul>
+  <li>Levels can be passed as numbers, string versions of numbers, the name of
+    the level, or any string whose first letter is the same as the first letter
+    of a level (ignoring case). It can even be an object whose
+    <code>toString()</code> method returns such a string. But numbers (as from
+    <code>$.jog.Fine</code>) is always faster.</li>
+  <li>Area names are matched exactly -- case matters.</li>
+</ul>
 
 <table border="1" style="width: 100%">
   <caption><strong><code>$.jog</code></strong></caption>
-  <col width="33%">
-  <col width="67%">
+  <col class="apiEntry">
+  <col class="apiDescription">
   <tbody>
     <tr>
       <td><code>$.jog(</code>[<em>areaName</em>]<code>)</code></td>
       <td>Return an object that represents the given area of code. If
-        <em>areaName</em> is not provided (or is <code>undefined</code>), the
-        root area object is returned.</td>
+        <em>areaName</em> is not provided (or is <code>undefined</code> or
+        <code>""</code>), the root area object is returned.</td>
     </tr>
     <tr>
-      <td><code>$.jog.Fine</code>,<br>
-        <code>$.jog.Debug</code>,<br>
-        <code>$.jog.Info</code>,<br>
-        <code>$.jog.Warning</code>,<br>
-        <code>$.jog.Config</code>,<br>
-        <code>$.jog.Severe</code>,<br>
-        <code>$.jog.Alert</code>,<br>
-        <code>$.jog.Off</code></td>
-      <td>The logging levels</td>
+      <td><code>Fine</code>,<br>
+        <code>Debug</code>,<br>
+        <code>Info</code>,<br>
+        <code>Warning</code>,<br>
+        <code>Config</code>,<br>
+        <code>Severe</code>,<br>
+        <code>Alert</code>,<br>
+        <code>Off</code></td>
+      <td>The logging levels (numbers).</td>
     </tr>
     <tr>
-      <td><code>$.jog.levels.</code>{<code>Fine</code>, <code>Debug</code>,
+      <td><code>levels.</code>{<code>Fine</code>, <code>Debug</code>,
         <code>Info</code>, <code>Warning</code>, <code>Config</code>,
         <code>Severe</code>, <code>Alert</code>, <code>Off</code>}</td>
-      <td>The levels object contains only the log levels as properties.</td>
+      <td>The levels object contains only the logging levels as properties.</td>
     </tr>
     <tr>
-      <td><code>$.jog.levelName(</code><em>level</em><code>)</code></td>
-      <td>Converts a level to its name.</td>
+      <td><code>levelName(</code><em>level</em><code>)</code></td>
+      <td>Return the standard name of the level.</td>
     </tr>
     <tr>
-      <td><code>$.jog.knownHandlers</code></td>
-      <td>An object whose properties are the globally-known handlers.</td>
+      <td><code>knownHandlers</code></td>
+      <td>An object whose properties are the globally-known handlers. You can
+        add handlers to this to make new handlers known.</td>
     </tr>
     <tr>
-      <td><code>$.jog.knownHandlers.console</code></td>
+      <td><code>knownHandlers.console</code></td>
       <td>A handler that logs messages to console.log()</td>
     </tr>
     <tr>
-      <td><code>$.jog.knownHandlers.html</code></td>
+      <td><code>knownHandlers.alert</code></td>
+      <td>A handler that logs messages via <code>alert()</code>. This handler's
+        default threshold level is <code>Alert</code>.</td>
+    </tr>
+    <tr>
+      <td><code>knownHandlers.html</code></td>
       <td>A handler that logs messages to a table on the page</td>
     </tr>
     <tr>
-      <td><code>$.jog.knownHandlers.popup</code></td>
+      <td><code>knownHandlers.popup</code></td>
       <td>A handler that logs messages to a table in a new popup window</td>
     </tr>
     <tr>
-      <td><code>$.jog.newHandler(</code><em>name</em>,
+      <td><code>newHandler(</code><em>name</em>,
         <em>properties</em><code>)</code></td>
-      <td>Return a handler object of a new type. The handler object's API is
-        described in more detail below.</td>
+      <td>Return a handler object of a new type. The object is created by
+        adding all the values in <em>properties</em> to a new handler object.
+        The handler object's API is described in more detail below. (To get a
+        handler of an existing type, copy an existing handler and change the
+        configuration as needed.)</td>
     </tr>
   </tbody>
 </table>
 
 <table border="1" style="width: 100%">
   <caption><strong><code>Area</code></strong></caption>
-  <col width="33%">
-  <col width="67%">
+  <col class="apiEntry">
+  <col class="apiDescription">
   <tbody>
+    <tr>
+      <td>name</td>
+      <td>The name of the area.</td>
+    </tr>
     <tr>
       <td>level([level])</td>
       <td>If <em>level</em> is specified, sets the logging threshold level for
-        the area. If it is not or is <code>undefined</code>, returns the
-        current threshold level for this area. If the level in this area is
-        <code>undefined</code>, the threshold level is inherited from the
-        parent area.</td>
+        the area. Returns the current threshold level for this area. If the
+        level in this area is <code>undefined</code>, the threshold level is
+        inherited from the parent area.</td>
     </tr>
     <tr>
       <td><code>log(</code><em>level,</em> [<em>message</em>]<code>)</code></td>
       <td>If <em>message</em> is present, this logs the message at the given
-        level, showing it if appropriate under the area's threshold. If message
-        is not specified (or is <code>undefined</code>), returns whether
-        messages at the level would be shown.</td>
+        level, showing it if appropriate under the area's threshold. Returns
+        <code>true</code> if messages at the level would be shown (ignoring
+        handler thresholds).</td>
     </tr>
     <tr>
       <td><code>fine(</code>[<em>message</em>]<code>)</code><br>
@@ -540,41 +547,73 @@ time, appropriately formatted.</p>
         <code>severe(</code>[<em>message</em>]<code>)</code><br>
         <code>alert(</code>[<em>message</em>]<code>)</code><br>
       </td>
-      <td>Methods for logging at the given levels. Logging via the
+      <td>Methods for logging at the given levels. For example, logging via the
         <code>info()</code> method is identical to logging via
         <code>log()</code> at the <code>Info</code> level.</td>
     </tr>
     <tr>
-      <td><code>$.jog.levels.</code>{<code>Fine</code>, <code>Debug</code>,
-        <code>Info</code>, <code>Warning</code>, <code>Config</code>,
-        <code>Severe</code>, <code>Alert</code>, <code>Off</code>}</td>
-      <td>The levels object contains only the log levels as properties.</td>
+      <td><code>handlers(</code> [<em>handler,</em> ...] <code>)</code></td>
+      <td>If handlers are provided, sets the handlers at this level to be those
+        specified. Returns the current set of handlers.</td>
     </tr>
     <tr>
-      <td><code>$.jog.levelName(</code><em>level</em><code>)</code></td>
-      <td>Converts a level to its name.</td>
+      <td><code>addHandlers(</code> [<em>handler,</em> ...] <code>)</code></td>
+      <td>Add handlers to this level. Adding a handler that is already present
+        has no effect.</td>
     </tr>
     <tr>
-      <td><code>$.jog.knownHandlers</code></td>
-      <td>An object whose properties are the globally-known handlers.</td>
+      <td><code>removeHandlers(</code> [<em>handler,</em> ...]
+      <code>)</code></td>
+      <td>Remove handlers from this level. Removing a handler that isn't
+        present has no effect.</td>
     </tr>
     <tr>
-      <td><code>$.jog.knownHandlers.console</code></td>
-      <td>A handler that logs messages to console.log()</td>
+      <td><code>useParentHandlers(</code> [<em>value</em>] <code>)</code></td>
+      <td>If present, whether to inherit handlers from parents is set to
+        <em>value.</em> Returns the current value.</td>
     </tr>
     <tr>
-      <td><code>$.jog.knownHandlers.html</code></td>
-      <td>A handler that logs messages to a table on the page</td>
+      <td><code>derive()</code></td>
+      <td>Return an area object that includes the result of inheritance from
+        parents. This object will let you examine the results of the area
+        hierarchy. For example, an area may have no specified level threshold
+        so its <code>level()</code> method would return <code>undefined</code>,
+        but the area object returned by its <code>derive()</code> method would
+        return the inherited value. These returned object cannot be used for
+        any other purpose, such as logging.</td>
     </tr>
     <tr>
-      <td><code>$.jog.knownHandlers.popup</code></td>
-      <td>A handler that logs messages to a table in a new popup window</td>
+      <td><code>destroy()</code></td>
+      <td>Forget the area, dropping any related resources. Normally this is
+        only called by <code>$.jog.destroy()</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<table border="1" style="width: 100%">
+  <caption><strong><code>Handler</code></strong></caption>
+  <col class="apiEntry">
+  <col class="apiDescription">
+  <tbody>
+    <tr>
+      <td><code>name</code></td>
+      <td>The name of the handler (not guaranteed to be unique).</td>
     </tr>
     <tr>
-      <td><code>$.jog.newHandler(</code><em>name</em>,
-        <em>properties</em><code>)</code></td>
-      <td>Return a handler object of a new type. The handler object's API is
-        described in more detail below.</td>
+      <td><code>config(</code> [<em>properties,</em> [<em>replace</em>]]
+        <code>)</code></td>
+      <td>If <em>properties</em> is specified, changes the configuration for
+        this handler. Normally this is object is merged using
+        <code>$.extend()</code>, but if <em>replace</em> is passed as
+        <code>true</code>, it will replace the values. Returns a copy of the
+        current settings. (This means you cannot change the settings of the
+        handler by changing the returned object, you must use
+        <code>config()</code>.)</td>
+    </tr>
+    <tr>
+      <td><code></code><code>config().level</code></td>
+      <td>If defined, the threshold level for this handlers. Log messages below
+        this level will be ignored.</td>
     </tr>
   </tbody>
 </table>
