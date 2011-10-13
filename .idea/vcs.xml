@@ -5,6 +5,7 @@
   </component>
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$USER_HOME$/jog.site" vcs="Git" />
   </component>
 </project>
 
