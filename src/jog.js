@@ -63,14 +63,13 @@
     this._settings = {};
 
     // The method that modifies the configuration fields 
-    this.config = function(properties, override) {
-      override = override != undefined ? override : false;
+    this.config = function(properties, replace) {
+      replace = replace != undefined ? replace : false;
       if (properties) {
-        if (override) {
-          this._settings = $.extend({}, properties);
-        } else {
-          $.extend(this._settings, properties);
+        if (replace) {
+          this._settings = {};
         }
+        $.extend(this._settings, properties);
       }
       return $.extend({}, this._settings);
     };
@@ -94,9 +93,13 @@
   function newHandler(name, properties) {
     if (!name) return undefined;
     var handler = new Handler(name);
-    if (properties) {
-      $.extend(handler, properties);
+    if (!properties) {
+      throw new Error("Property object must be specified");
     }
+    if (typeof(properties.publish) != 'function') {
+      throw new Error("Handler must have a publish() method");
+    }
+    $.extend(handler, properties);
     return handler;
   }
 
@@ -167,7 +170,7 @@
             top = $(top); // make sure it's JQuery-able
           }
           if (!top || top.length == 0) {
-            throw "insertHtml for '" + htmlId + "' returns no node";
+            throw Error("insertHtml for '" + htmlId + "' returns no node");
           }
           top.attr('id', htmlId);
           this._addedTop = top;
@@ -295,7 +298,7 @@
         delete this._pending;
       },
       cleanupCopy: function() {
-        throw "Popup handler not ready (yet) for multiple copies";
+        throw Error("Popup handler not ready (yet) for multiple copies");
       }
     }),
     console: newHandler("console", {
@@ -374,21 +377,35 @@
 
   // Reliably convert any string or number to its level number, if it has one
   function toLevelNum(level) {
-    if (typeof(level) == 'number') return level;
+    if (typeof(level) == 'number') {
+      if (level >= levels.Fine && level <= levels.Off) {
+        return level;
+      }
+      throw new Error("Level out of range Fine..Off (" + levels.Fine + ".." +
+          levels.Off + ")");
+    }
+
+    // Undefined is sometimes a reasonable value (and we'll accept null)
     if (!level) return undefined;
+
     if (typeof(level) == 'object') {
       level = level.toString();
     }
+
     if (typeof(level) == 'string') {
-      // See if it's "12"
+      // See if it's "3", etc.
       var num = parseInt(level);
-      if (isNaN(num)) {
-        return levelNameToNum[level.charAt(0)];
-      } else {
-        return num;
+      if (!isNaN(num)) {
+        // This enforces the validity check for numbers
+        return toLevelNum(num);
       }
+      num = levelNameToNum[level.charAt(0)];
+      if (num == undefined) {
+        throw new Error("Invalid level name: '" + level + "'");
+      }
+      return num;
     }
-    throw "Unexpected type of level specifier: " + typeof(level) + ": " + level;
+    throw Error("Invalid level specifier type: " + typeof(level));
   }
 
   // Reliably convert any string or number to its level name, if it has one
@@ -426,7 +443,7 @@
     this._lineage = []; // the cumulative area names from root to me (see below)
 
     function notDerived() {
-      if (self._isDerived) throw "Operation not allowed on derived area";
+      if (self._isDerived) throw Error("Operation not allowed on derived area");
     }
 
     this.useParentHandlers = function(value) {
@@ -499,7 +516,7 @@
       var when = derived.toTimeString(new Date());
       for (var id in derived._handlers) {
         var handler = derived._handlers[id];
-        var handlerLevel = handler.level();
+        var handlerLevel = handler._settings.level;
         if (!handlerLevel || handlerLevel <= levelNum) {
           handler.publish(this.name, levelNum, levelName, when, message);
         }
