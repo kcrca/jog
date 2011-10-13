@@ -621,5 +621,36 @@ time, appropriately formatted.</p>
     </tr>
   </tbody>
 </table>
+
+<h3>Apologia: Why This Logging Package Exists</h3>
+
+<p>There are several existing log packages for JQuery, so why does this one
+need to exist? None of the others had the ability to do two important things
+for real-world, durable, usable logging: areas and handlers.</p>
+
+<p>Areas let you split logging for one area of the code from another and
+control them independently This is critical for plugins or other shared code.
+Without areas, if someone using it wants to log their own stuff, they also see
+your log messages when they turn logging on. This gets much worse if they are
+using multiple plugins. So you need to strip your log statements as part of
+releasing your code, which defeats the purpose. Jog has areas so you can leave
+your log messages in place and they won't bother anyone else -- unless you ask
+them to turn it on to help debug a problem.</p>
+
+<p>Handlers are important because plugins and applications and programmers
+differ. Console log messages can be ugly and difficult to save, but are simple
+and don't interfere with your own page. HTML logs do interfere, but CSS can
+make it easier to see what's up, and you can search and save. Logs in a popup
+don't interfere and can handle multiple browser windows in one place, although
+having another window can be a hassle. And alerts, well, you know how
+unpleasant they are -- and how necessary at times.</p>
+
+<p>As you can see, depending on how you like to work (and others on the same
+project), and many other factors, being able to control how message are
+displayed is a powerful thing. And you can add a logger to send messages to
+your server, or one that uses Growl, or ...</p>
+
+<p>So that is why I found it worth the time to write this. I hope it helps you
+out.</p>
 </body>
 </html>
