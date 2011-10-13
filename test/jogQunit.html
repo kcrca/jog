@@ -37,7 +37,7 @@
             src="http://code.jquery.com/qunit/git/qunit.js"></script>
 
     <script type="text/javascript" src="../src/jog.js"></script>
-    <link rel="stylesheet" href="../src/jog.css" type="text/css"/>
+    <link rel="stylesheet" href="jogHtml.css" type="text/css"/>
 </head>
 
 <script>
@@ -81,22 +81,23 @@ var runTests = function() {
                 this.logHistory = [];
                 this.destroyed = false;
             },
-            testLog: function(addLog, area, level, message) {
+            testLog: function(addLog, area, level, message, expectedMsg) {
+                expectedMsg = expectedMsg || message;
                 this.ensureSetup();
                 var oldLen = this.logHistory.length;
                 this.markCount();
                 $.jog(area).log(level, message);
                 var newLen = this.logHistory.length;
-                var msg = ': ' + message;
+                var checkMsg = ': ' + expectedMsg;
                 if (!addLog) {
-                    this.checkChange(0, msg);
+                    this.checkChange(0, checkMsg);
                 } else {
-                    this.checkChange(1, msg);
+                    this.checkChange(1, checkMsg);
                     if (newLen != oldLen + 1) return;
                     var latest = this.logHistory[oldLen];
-                    equal(latest[0], area, message);
-                    equal(latest[1], level, message);
-                    equal(latest[4], message, message);
+                    equal(area, latest[0], expectedMsg);
+                    equal(level, latest[1], expectedMsg);
+                    equal(expectedMsg, latest[4], expectedMsg);
                 }
             },
             ensureSetup: function() {
@@ -315,6 +316,19 @@ var runTests = function() {
         equal(h.toString(), hStr);
         equal(hX.toString(), hXStr);
         equal(hXY.toString(), hXYStr);
+    });
+
+    test("functions and objects as messages", function() {
+        initMocks();
+        var h = newMockHandler('funcs');
+        $.jog().handlers(h);
+
+        var message = "Got it!";
+        h.testLog(true, 'funcs', levels.Info, function() {
+            return { toString: function() {
+                return message;
+            }};
+        }, message);
     });
 
     test("derived method", function() {

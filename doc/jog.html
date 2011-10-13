@@ -31,6 +31,7 @@
   <style>
  .apiEntry { width: 33% }
  .apiDescription { width: 67% }</style>
+  <link rel="stylesheet" href="jog.css" type="text/css">
 </head>
 
 <body>
@@ -66,33 +67,32 @@ window, as well as on the console.</p>
 
 <h3>The Basics: Areas and Levels</h3>
 
-<p>When developing and debugging software you often want to track values or
-which code is executing. Sometimes these debug messages are worth holding on to
-for the next time you have problems in that same code. Logging is a common way
-to do this: Instead of simple print statements, you put in conditional print
-statements that can be turned on and off as needed. In Java, the
-<code>java.util.logging</code> package and the log4j package provide these
-tools. Other languages have similar tools. The jog package is designed to do
-this for Javascript/JQuery using terms and approaches that are already familiar
-to developers.</p>
+<p>When working on software, you often want to track values as they change, or
+which code is executing. Often this is done by adding "print" statements. These
+debug messages can be worth holding on to for the next time you have problems
+in that code. Logging is a common way to do this: Instead of simple print
+statements, you put in conditional print statements that can be turned on and
+off as needed. In Java, the <code>java.util.logging</code> package and the
+log4j package provide these tools. Other languages have similar tools. The jog
+package is designed to do this for Javascript/JQuery using terms and approaches
+that are already familiar to developers.</p>
 
-<p>Each log messages applies to some area of code, so the basic organizing
-block of jog is the <span style="font-style: italic;">area.</span> When you
-write a log statement, you start by specifying the area to jog:</p>
-<pre>$.jog(<span style="font-style: italic;">areaName</span>)</pre>
+<p>Each log message applies to some area of code, so the basic organizing block
+of jog is the <i>area.</i> When you write a log statement, you start by
+specifying the area to jog:</p>
+<pre>$.jog(<i>areaName</i>)</pre>
 
-<p>The jog function returns an object that manages logging in that area. The
+<p>The jog function returns an area object that governs the area's logging. The
 primary operation on that object is to write log messages:</p>
-<pre>$.jog(<span style="font-style: italic;">areaName</span>).log(<span style="font-style: italic;">level</span>, <span style="font-style: italic;">message</span>)</pre>
+<pre>$.jog(<i>areaName</i>).log(<i>level</i>, <i>message</i>)</pre>
 
-<p>Each area has a <span style="font-style: italic;">level</span> at which it
-is allowing messages to be displayed. Messages at that level or above are
-displayed; messages below it are silently ignored. The levels are
-<code>Fine</code>, <code>Debug</code>, <code>Info</code>, <code>Config</code>,
-<code>Warning</code>, <code>Severe</code>, <code>Alert</code>, and
-<code>Off</code>. The default logging threshold level for all areas if
-<code>Info</code>. The level constants are obtained directly from jog. For
-example, the constant for debug level messages is <code>$.jog.Debug</code>.</p>
+<p>Each area has a <i>level</i> at which it is allowing messages to be
+displayed. Messages at that level or above are displayed; messages below it are
+silently ignored. The levels are <code>Fine</code>, <code>Debug</code>,
+<code>Info</code>, <code>Config</code>, <code>Warning</code>,
+<code>Severe</code>, <code>Alert</code>, and <code>Off</code>. The default
+logging threshold level for all areas is <code>Info</code>. Level constants are
+obtained directly from jog (such as <code>$.jog.Debug</code>).</p>
 
 <p>You can also specify the message level by invoking the appropriately-named
 method on the area object, such as:</p>
@@ -102,10 +102,10 @@ method on the area object, such as:</p>
 sometimes need the level-specifying <code>log()</code> function when you are
 writing code where the level must come from a variable.</p>
 
-<p>Wherever a level is passed to jog, the preceded thing to pass is the number
+<p>Wherever a level is passed to jog, the preferred value to pass is the number
 from <code>$.jog</code>, such as <code>$.jog.Debug</code>. But you can also
 pass the number as a string, or the name of the level, or any string that
-starts with the first character of the level. Case is always ignored. These
+starts with the first character of the level (case is always ignored). These
 string versions can be useful to you at times, but the numbers are faster, and
 keeping the overhead of logging down is important.</p>
 
@@ -123,10 +123,10 @@ messages for both by setting them on the parent:</p>
 <pre>$.jog('ui').level($.jog.Debug);</pre>
 
 <p>If a threshold level isn't set on an area, it will use it's parent's value.
-And at the top there is a root area which is unnamed, is the ultimate parent of
-all areas, and has the overall defaults. For example, the root area is where
-the default level of <code>Info</code> is set. So this would set the overall
-log level to <code>Debug</code>: </p>
+And at the top there is a root area, which is the ultimate parent of all areas
+and has the overall defaults. For example, the root area is where the default
+level of <code>Info</code> is set. So this would set the overall log level to
+<code>Debug</code> instead:</p>
 <pre>$.jog().level($.jog.Debug);</pre>
 
 <p>The settings used for an area will be the most specific to that area. In
@@ -136,31 +136,36 @@ area ui.prefs is checked for a level setting. If there isn't one, then the
 intervening area has a setting.</p>
 
 <p>If you want to print out more than a basic log message, you may want to
-first check to see if the resulting message would be visible. For example, if
-calculating the values to show is expensive, there is no reason to do that if
-the log message will just get filtered out. You can do this by omitting a
-message:</p>
-<pre>if ($.jog('ui').log($.jog.Debug)) {
-    // ... calculate median value ...
-    $.jog('ui').log($.jog.Debug, 'The median value is ' + median);
+first check to see if the resulting message would be visible. For example, you
+can avoid expensive logging calculations if the log message will just get
+filtered out:</p>
+<pre>if ($.jog('ui').debug()) {
+    // <i>... calculate median value ...</i>
+    $.jog('ui').debug('The median value is ' + median);
 }</pre>
+
+<p>Another possibility is to pass in a function that returns a message instead
+of the message itself. The function will only be called if the message is to be
+logged, so its overhead is avoided when the log message is filtered out:</p>
+<pre>$.jog('ui').debug(function() {
+    // <i>... calculate median value ...</i>
+    return 'The median value is ' + median;
+});</pre>
 
 <p>You can hold on to area objects so you don't have to keep looking them up.
 This further reduces the overhead of using log messages because the lookup is
-done only once. If your UI code is split into one file, for example, you could
-have this near the top:</p>
+done only once. For example, you can have this near the top of your code:</p>
 <pre>var uiLogger = $.jog('ui');</pre>
 
-<p>Then later on in the code you can use uiLogger instead of looking up the
-logger:</p>
-<pre>if (uiLogger.log($.jog.Debug)) {
-    // ... calculate median value ...
-    uiLogger.log($.jog.Debug, 'The median value is ' + median);
+<p>Then you can use uiLogger instead of looking up the logger:</p>
+<pre>if (uiLogger.debug()) {
+    // <i>... calculate median value ...</i>
+    uiLogger.debug('The median value is ' + median);
 }</pre>
 
-<p>If you want an area to stop enforcing a threshold, you can take it away by
-using a level of <code>undefined</code>. Then it will once again delegate the
-threshold choice to an area above it.</p>
+<p>If you want an area to stop enforcing a threshold, you can set the level to
+<code>undefined</code>. Then it will once again delegate the threshold choice
+to an area above it.</p>
 <pre>$.jog('ui.prefs').level(undefined);</pre>
 
 <p>The level named <code>Off</code> is the highest level, intended to be used
@@ -186,8 +191,8 @@ whose name you expect to be unique to your code.</p>
 <p>Once a log message has passed the level threshold test, where does it go?
 The answer is that you can configure that.</p>
 
-<p><em>Handlers</em> are objects that take messages and presents them. By
-default jog includes a handler that shows messages on the console via
+<p><i>Handlers</i> are objects that take messages and presents them. By default
+jog includes a handler that shows messages on the console via
 <code>console.log()</code>:</p>
 <pre>ui - Info - 19:12:12 - The median value is 4.3</pre>
 
@@ -282,9 +287,9 @@ and their non-standard configurable values:</p>
             for the levels; <code>jog-when</code> for the times; and
             <code>jog-message</code> for the actual messages. In addition, each
             row has two classes:
-            <code>jog-level-</code><em>levelName<code></code></em> and
-            <code>jog-area-</code><em>areaName</em> for the level and area of
-            the individual log. For example, in an Info message in the ui area,
+            <code>jog-level-</code><i>levelName<code></code></i> and
+            <code>jog-area-</code><i>areaName</i> for the level and area of the
+            individual log. For example, in an Info message in the ui area,
             they would be <code>log-level-Info</code> and
             <code>log-area-ui</code>. Note: When used as part of a class name,
             the area name has all its dot separators replaced with dashes
@@ -320,10 +325,10 @@ and their non-standard configurable values:</p>
   &lt;table class="jogClass-table" id="jogID-table"&gt;
     &lt;tbody&gt;
       &lt;tr class="jogClass-header" id="jogID-header"&gt;
-        &lt;th&gt;Area&lt;/th&gt;
-        &lt;th&gt;Level&lt;/th&gt;
-        &lt;th&gt;When&lt;/th&gt;
-        &lt;th&gt;Message&lt;/th&gt;
+        &lt;th id="JogID-area"&gt;Area&lt;/th&gt;
+        &lt;th id="JogID-level"&gt;Level&lt;/th&gt;
+        &lt;th id="JogID-when"&gt;When&lt;/th&gt;
+        &lt;th id="JogID-message"&gt;Message&lt;/th&gt;
       &lt;/tr&gt;
       &lt;tr class="jogClass-level-Info jogClass-area-ui jogClass-area-ui-prefs"&gt;
         &lt;td class="jogClass-area"&gt;ui.prefs&lt;/td&gt;
@@ -441,23 +446,23 @@ time, appropriately formatted.</p>
 
 <p>General API notes:</p>
 <ul>
+  <li>Area names are matched exactly -- case matters.</li>
   <li>Levels can be passed as numbers, string versions of numbers, the name of
     the level, or any string whose first letter is the same as the first letter
     of a level (ignoring case). It can even be an object whose
     <code>toString()</code> method returns such a string. But numbers (as from
     <code>$.jog.Fine</code>) is always faster.</li>
-  <li>Area names are matched exactly -- case matters.</li>
 </ul>
 
-<table border="1" style="width: 100%">
+<table>
   <caption><strong><code>$.jog</code></strong></caption>
   <col class="apiEntry">
   <col class="apiDescription">
   <tbody>
     <tr>
-      <td><code>$.jog(</code>[<em>areaName</em>]<code>)</code></td>
+      <td><code>$.jog(</code> [<i>areaName</i>] <code>)</code></td>
       <td>Return an object that represents the given area of code. If
-        <em>areaName</em> is not provided (or is <code>undefined</code> or
+        <i>areaName</i> is not provided (or is <code>undefined</code> or
         <code>""</code>), the root area object is returned.</td>
     </tr>
     <tr>
@@ -472,13 +477,13 @@ time, appropriately formatted.</p>
       <td>The logging levels (numbers).</td>
     </tr>
     <tr>
-      <td><code>levels.</code>{<code>Fine</code>, <code>Debug</code>,
+      <td><code>levels.</code>{ <code>Fine</code>, <code>Debug</code>,
         <code>Info</code>, <code>Warning</code>, <code>Config</code>,
-        <code>Severe</code>, <code>Alert</code>, <code>Off</code>}</td>
+        <code>Severe</code>, <code>Alert</code>, <code>Off</code> }</td>
       <td>The levels object contains only the logging levels as properties.</td>
     </tr>
     <tr>
-      <td><code>levelName(</code><em>level</em><code>)</code></td>
+      <td><code>levelName(</code> <i>level</i> <code>)</code></td>
       <td>Return the standard name of the level.</td>
     </tr>
     <tr>
@@ -504,18 +509,18 @@ time, appropriately formatted.</p>
       <td>A handler that logs messages to a table in a new popup window</td>
     </tr>
     <tr>
-      <td><code>newHandler(</code><em>name</em>,
-        <em>properties</em><code>)</code></td>
+      <td><code>newHandler(</code> <i>name</i>, <i>properties</i>
+      <code>)</code></td>
       <td>Return a handler object of a new type. The object is created by
-        adding all the values in <em>properties</em> to a new handler object.
-        The handler object's API is described in more detail below. (To get a
+        adding all the values in <i>properties</i> to a new handler object. The
+        handler object's API is described in more detail below. (To get a
         handler of an existing type, copy an existing handler and change the
         configuration as needed.)</td>
     </tr>
   </tbody>
 </table>
 
-<table border="1" style="width: 100%">
+<table>
   <caption><strong><code>Area</code></strong></caption>
   <col class="apiEntry">
   <col class="apiDescription">
@@ -526,51 +531,50 @@ time, appropriately formatted.</p>
     </tr>
     <tr>
       <td>level([level])</td>
-      <td>If <em>level</em> is specified, sets the logging threshold level for
+      <td>If <i>level</i> is specified, sets the logging threshold level for
         the area. Returns the current threshold level for this area. If the
         level in this area is <code>undefined</code>, the threshold level is
         inherited from the parent area.</td>
     </tr>
     <tr>
-      <td><code>log(</code><em>level,</em> [<em>message</em>]<code>)</code></td>
-      <td>If <em>message</em> is present, this logs the message at the given
+      <td><code>log(</code> <i>level,</i> [<i>message</i>] <code>)</code></td>
+      <td>If <i>message</i> is present, this logs the message at the given
         level, showing it if appropriate under the area's threshold. Returns
         <code>true</code> if messages at the level would be shown (ignoring
         handler thresholds).</td>
     </tr>
     <tr>
-      <td><code>fine(</code>[<em>message</em>]<code>)</code><br>
-        <code>debug(</code>[<em>message</em>]<code>)</code><br>
-        <code>info(</code>[<em>message</em>]<code>)</code><br>
-        <code>warning(</code>[<em>message</em>]<code>)</code><br>
-        <code>config(</code>[<em>message</em>]<code>)</code><br>
-        <code>severe(</code>[<em>message</em>]<code>)</code><br>
-        <code>alert(</code>[<em>message</em>]<code>)</code><br>
+      <td><code>fine(</code> [<i>message</i>] <code>)</code><br>
+        <code>debug(</code> [<i>message</i>] <code>)</code><br>
+        <code>info(</code> [<i>message</i>] <code>)</code><br>
+        <code>warning(</code> [<i>message</i>] <code>)</code><br>
+        <code>config(</code> [<i>message</i>] <code>)</code><br>
+        <code>severe(</code> [<i>message</i>] <code>)</code><br>
+        <code>alert(</code> [<i>message</i>] <code>)</code><br>
       </td>
       <td>Methods for logging at the given levels. For example, logging via the
         <code>info()</code> method is identical to logging via
         <code>log()</code> at the <code>Info</code> level.</td>
     </tr>
     <tr>
-      <td><code>handlers(</code> [<em>handler,</em> ...] <code>)</code></td>
+      <td><code>handlers(</code> [<i>handler,</i> ...] <code>)</code></td>
       <td>If handlers are provided, sets the handlers at this level to be those
         specified. Returns the current set of handlers.</td>
     </tr>
     <tr>
-      <td><code>addHandlers(</code> [<em>handler,</em> ...] <code>)</code></td>
+      <td><code>addHandlers(</code> [<i>handler,</i> ...] <code>)</code></td>
       <td>Add handlers to this level. Adding a handler that is already present
         has no effect.</td>
     </tr>
     <tr>
-      <td><code>removeHandlers(</code> [<em>handler,</em> ...]
-      <code>)</code></td>
+      <td><code>removeHandlers(</code> [<i>handler,</i> ...] <code>)</code></td>
       <td>Remove handlers from this level. Removing a handler that isn't
         present has no effect.</td>
     </tr>
     <tr>
-      <td><code>useParentHandlers(</code> [<em>value</em>] <code>)</code></td>
+      <td><code>useParentHandlers(</code> [<i>value</i>] <code>)</code></td>
       <td>If present, whether to inherit handlers from parents is set to
-        <em>value.</em> Returns the current value.</td>
+        <i>value.</i> Returns the current value.</td>
     </tr>
     <tr>
       <td><code>derive()</code></td>
@@ -590,7 +594,7 @@ time, appropriately formatted.</p>
   </tbody>
 </table>
 
-<table border="1" style="width: 100%">
+<table>
   <caption><strong><code>Handler</code></strong></caption>
   <col class="apiEntry">
   <col class="apiDescription">
@@ -600,11 +604,11 @@ time, appropriately formatted.</p>
       <td>The name of the handler (not guaranteed to be unique).</td>
     </tr>
     <tr>
-      <td><code>config(</code> [<em>properties,</em> [<em>replace</em>]]
+      <td><code>config(</code> [<i>properties,</i> [<i>replace</i>]]
         <code>)</code></td>
-      <td>If <em>properties</em> is specified, changes the configuration for
-        this handler. Normally this is object is merged using
-        <code>$.extend()</code>, but if <em>replace</em> is passed as
+      <td>If <i>properties</i> is specified, changes the configuration for this
+        handler. Normally this is object is merged using
+        <code>$.extend()</code>, but if <i>replace</i> is passed as
         <code>true</code>, it will replace the values. Returns a copy of the
         current settings. (This means you cannot change the settings of the
         handler by changing the returned object, you must use

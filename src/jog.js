@@ -511,6 +511,15 @@
       if (!message) return true;
 
       notDerived();
+      
+      // Resolve the message into a simple string so we do it exactly once
+      if (typeof(message) == 'function') {
+        message = message();
+      }
+      if (typeof(message) == 'object') {
+        message = message.toString();
+      }
+
       // Generate the messages
       var levelName = levelNumToName[levelNum];
       var when = derived.toTimeString(new Date());
