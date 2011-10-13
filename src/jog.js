@@ -67,6 +67,9 @@
       if (!this._settings) {
         this._settings = {};
       }
+      if (!properties) {
+        return $.extend({}, this._settings);
+      }
       if (override) {
         this._settings = $.extend({}, properties);
       } else {
@@ -145,9 +148,12 @@
       _ensureTable: function() {
         if (this._tableBody) return this._tableBody;
 
+        var idPrefix = this._settings.idPrefix;
+        var classPrefix = this._settings.classPrefix;
+
         var htmlId = this._settings.htmlId;
         if (!htmlId) {
-          htmlId = this._settings.idPrefix + '-html';
+          htmlId = idPrefix + '-html';
         }
 
         // If the top does not exist, create it and add it
@@ -161,12 +167,9 @@
             throw "insertHtml for '" + htmlId + "' returns no node";
           }
           top.attr('id', htmlId);
-          top.addClass(this._settings.classPrefix + "-html");
           this._addedTop = top;
         }
-
-        var idPrefix = this._settings.idPrefix;
-        var classPrefix = this._settings.classPrefix;
+        top.addClass(classPrefix + "-html");
 
         // If the table already exists, then use it. This typically would only
         // happen if two differently-configured html publishers were writing to

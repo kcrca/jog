@@ -37,6 +37,7 @@
             src="http://code.jquery.com/qunit/git/qunit.js"></script>
 
     <script type="text/javascript" src="../src/jog.js"></script>
+    <link rel="stylesheet" href="../src/jog.css" type="text/css"/>
 </head>
 
 <script>
@@ -52,7 +53,7 @@ var runTests = function() {
     function TimeSource() {
         var count = 0;
         this.nextTime = function() {
-            return (count++).toPrecision(4);
+            return (count++).toString();
         };
         this.reset = function() {
             count = 0;
@@ -306,17 +307,85 @@ var runTests = function() {
         var area = $.jog('derived');
         var h = newMockHandler();
         area.addHandlers(h);
-        
+
         var derived = area.derive();
 
         equals(levels.Info, root.level());
         equals(undefined, area.level());
         equals(root.level(), derived.level());
-        
+
         deepEqual(area.handlers(), [h]);
         equal(derived.handlers().length, 2);
     });
+
+    test("html handler", function() {
+        var html = baseHandlers.html;
+
+        var root = $.jog();
+        root.level(levels.Info);
+        root.handlers(html);
+
+        var area = $.jog('ui.prefs');
+        var origInsert = html.config().insertHtml;
+        var calledInsert = false;
+        html.config({
+            idPrefix: 'jogID',
+            classPrefix: 'jogClass',
+            insertHtml: function(htmlId) {
+                calledInsert = true;
+                return origInsert(htmlId);
+            }
+        });
+        $('#jogID-html').remove(); // in case it's around from an earlier run
+        equal($('#jogID-html').length, 0);
+
+        // This should not be shown so nothing should happen
+        area.debug('should not be shown');
+        ok(!calledInsert);
+        equal($('#jogID-html').length, 0);
+
+        // This should be shown
+        area.info('Read Me!');
+        ok(calledInsert);
+        equal($('#jogID-html').length, 1);
+        var expected = $('#ExpectedjogID-html');
+        var actual = $('#jogID-html');
+        domStrEqual(expected, actual, "generated HTML");
+    });
 };
+
+function domStrEqual(expected, actual, message) {
+    var exp = expected[0];
+    var act = actual[0];
+
+    var expStr = exp.outerHTML;
+    var actStr = act.outerHTML;
+
+    expStr = orderAttributes(expStr);
+    expStr = expStr.replace(/id="Expected/g, 'id="');
+    actStr = orderAttributes(actStr);
+    
+    equal(expStr, actStr, message);
+}
+
+function orderAttributes(str) {
+    str = str.replace(/>\s*</g, ">\n<");
+    var lines = str.split('\n');
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        var firstQuote = line.indexOf('"');
+        var start = line.lastIndexOf(' ', firstQuote) + 1;
+        if (start < 0) continue;
+        var end = line.lastIndexOf('"');
+        var attrStr = line.substring(start, end);
+        var attrs = attrStr.split('" ');
+        attrs.sort();
+        attrStr = attrs.join('" ');
+        line = line.substring(0, start) + attrStr + line.substring(end);
+        lines[i] = line;
+    }
+    return lines.join('\n');
+}
 
 $(document).ready(runTests);
 </script>
@@ -332,6 +401,25 @@ $(document).ready(runTests);
 
 <ol id="qunit-tests"></ol>
 <div id="qunit-fixture">test markup, will be hidden</div>
+
+<div id="ExpectedjogID-html" class="jogClass-html">
+    <table class="jogClass-table" id="ExpectedjogID-table">
+        <tbody>
+        <tr class="jogClass-header" id="ExpectedjogID-header">
+            <th>Area</th>
+            <th>Level</th>
+            <th>When</th>
+            <th>Message</th>
+        </tr>
+        <tr class="jogClass-level-Info jogClass-area-ui jogClass-area-ui-prefs">
+            <td class="jogClass-area">ui.prefs</td>
+            <td class="jogClass-level">Info</td>
+            <td class="jogClass-when">0</td>
+            <td class="jogClass-message">Read Me!</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
 
 </body>
 </html>
