@@ -46,7 +46,7 @@ var runTests = function() {
     QUnit.config.reorder = false;
 
     var levels = $.jog.levels;
-    var baseHandlers = $.jog.baseHandlers;
+    var baseHandlers = $.jog.knownHandlers;
     var timeSource;
     var mockHandlers = [];
 
@@ -158,7 +158,7 @@ var runTests = function() {
         ok($.jog, "$.jog exists");
         ok($.jog(), "$.jog() returns an object");
         ok($.jog.levels, "$.jog().levels is an object");
-        ok($.jog.baseHandlers, "$.jog().baseHandlers is an object");
+        ok($.jog.knownHandlers, "$.jog().baseHandlers is an object");
         ok($.jog.newHandler, "$.jog().baseHandlers is a function");
     });
 

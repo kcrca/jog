@@ -117,7 +117,7 @@
     return top;
   }
 
-  var baseHandlers = {
+  var knownHandlers = {
     html: newHandler("html", {
       _settings: {
         idPrefix: 'jog',
@@ -330,7 +330,7 @@
       }
     })
   };
-  $.jog.baseHandlers = baseHandlers;
+  $.jog.knownHandlers = knownHandlers;
 
   // Convert a message to just its text
   function messageText(message) {
@@ -362,7 +362,7 @@
   var areaRoot = new Area('');
   areaRoot.level(levels.Info);
   areaRoot.alertLevel(levels.Alert);
-  areaRoot.addHandlers(baseHandlers.console);
+  areaRoot.addHandlers(knownHandlers.console);
   areaRoot.toTimeString = defaultTimeFormat;
 
   // Reliably convert any string or number to its level number, if it has one
@@ -559,6 +559,8 @@
 
     // Add functions for levels, (area.error(), area.info(), ...).
     for (levelName in levels) {
+      // Don't create off() function
+      if (levelName == 'Off') continue;
       var functionName = levelName.toLowerCase();
       var levelNum = levelNameToNum[levelName];
       this[functionName] = levelNameFunction(levelNum);

@@ -42,7 +42,7 @@ function handleLogOptions(data) {
 }
 
 function handleLogRecord(data) {
-  $.jog.baseHandlers.html.publish(data.area, data.levelNum, data.levelName,
+  $.jog.knownHandlers.html.publish(data.area, data.levelNum, data.levelName,
       data.when, data.message);
 }
 

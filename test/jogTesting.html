@@ -64,7 +64,7 @@
 
     function createHandlerOptions() {
         var inUse = $.jog().handlers();
-        var handlers = $.jog.baseHandlers;
+        var handlers = $.jog.knownHandlers;
         for (var handlerName in handlers) {
             var handler = handlers[handlerName];
             var checkbox = $('<input type="checkbox"/>');
@@ -81,7 +81,7 @@
     function handlerCheckboxChanged(evt) {
         var checkbox = $(evt.target);
         var name = checkbox.attr('name');
-        var handler = $.jog.baseHandlers[name];
+        var handler = $.jog.knownHandlers[name];
         if (checkbox.is(':checked')) {
             $.jog().addHandlers(handler);
         } else {
