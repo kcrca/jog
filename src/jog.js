@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+// Source hosted at https://github.com/kcrca/jog
 (function($) {
   $.jog = jog;
 
@@ -444,66 +445,89 @@
   // object can be invoked by users directly, so method should be exposed with
   // careful consideration.
   function Area(name) {
-    var self = this;
+    if (name == '' && areaRoot) {
+      throw new Error("Empty area name not allowed");
+    }
 
     this.name = name;
     this._handlers = {}; // the handlers set specifically on this area
     this._useParentHandlers = true;
-    this._lineage = []; // the cumulative area names from root to me (see below)
+    this._kids = {};
 
-    function notDerived() {
-      if (self._isDerived) throw Error("Operation not allowed on derived area");
-    }
+    this._isNotDerived = function(keepCache) {
+      if (this._isDerived) throw Error("Operation not allowed on derived area");
+      if (!keepCache) {
+        this._invalidateCache();
+      }
+    };
 
     this.useParentHandlers = function(value) {
       if (value != undefined) {
-        notDerived();
+        this._isNotDerived();
         this._useParentHandlers = value;
       }
       return this._useParentHandlers;
     };
 
-    // Calculate this area's lineage (except for root, which is
-    // implicit). This sets the _lineage field to a series of names, from
-    // the top down through this area. For example, for the area "x.y.z",
-    // _lineage would have ["x", "x.y", "x.y.z"].
+
+    // Calculate this area's lineage. This sets the _lineage field to a series
+    // of names, from the top down through this area. For example, for the area
+    // "x.y.z", _lineage would have ["x", "x.y", "x.y.z"].
+    var self = this;
     (function() {
-      var parts = name.split(/\./);
-      for (var i = 0; i < parts.length; i++) {
-        if (i == 0) {
-          self._lineage.push(parts[i]);
-        } else {
-          self._lineage.push(self._lineage[i - 1] + '.' + parts[i]);
-        }
+      if (name == '') {
+        delete self._parent;
+        return;
       }
+
+      var lastDot = name.lastIndexOf('.');
+      if (lastDot < 0) {
+        self._parent = areaRoot;
+      } else {
+        var parentName = name.substring(0, lastDot);
+        self._parent = jog(parentName);
+      }
+      self._parent._addKid(self);
     })();
 
-    // Build up the current settings for the area by extending values from
-    // ancestors.
-    //
-    // This is done on the fly for each log message. It could be calculated
-    // only if there has been an ancestor changed. That would be faster, but
-    // maybe not worth the complexity. (something like how swing components
-    // invalidate their layout and those of their descendants if they are
-    // changed, and then are recalculated if they are needed but invalid.)
-    this.derive = function() {
-      // We start at the top (root), and then merge in more and more specific
-      // values.
-      var info = $.extend(true, {}, areaRoot);
-      info._isDerived = true;
+    this._addKid = function(kid) {
+      this._kids[kid.name] = kid;
+    };
 
-      for (var i = 0; i < this._lineage.length; i++) {
-        var areaName = this._lineage[i];
-        var areaInfo = areas[areaName];
-        if (areaInfo) {
-          // If this area cuts off its parent, use only its own handlers
-          if (!areaInfo._useParentHandlers) {
-            info._handlers = {};
-          }
-          $.extend(true, info, areaInfo);
+    this._invalidateCache = function() {
+      if (this._cache) {
+        delete this._cache;
+        for (var name in this._kids) {
+          this._kids[name]._invalidateCache();
         }
       }
-      return info;
+    };
+
+    this.derive = function() {
+      if (this._isDerived) return this;
+      return this._doDerive(true);
+    };
+
+    this._doDerive = function(returnCopy) {
+      // Build up the current settings for the area by extending values from
+      // ancestors.
+      if (!this._cache) {
+        if (this._parent) {
+          this._cache = this._parent._doDerive(true);
+        } else {
+          this._cache = {};
+        }
+        if (!this._useParentHandlers) {
+          this._cache._handlers = {};
+        }
+        $.extend(true, this._cache, this);
+        this._cache._isDerived = true;
+      }
+      if (!returnCopy) {
+        return this._cache;
+      } else {
+        return $.extend(true, {}, this._cache);
+      }
     };
 
     // The actual logging function
@@ -513,13 +537,13 @@
       // Special case, and not just for speed -- An Off shouldn't be shown
       if (levelNum == levels.Off) return false;
 
-      var derived = (this._isDerived ? this : this.derive());
+      var derived = (this._isDerived ? this : this._doDerive(false));
       if (levelNum < derived._level) return false;
 
-      // This is how the user can check if a certain level would be logged
+      // Without a message, checking if a certain level would be logged
       if (!message) return true;
 
-      notDerived();
+      this._isNotDerived(true);
 
       // Resolve the message into a simple string so we do it exactly once
       if (typeof(message) == 'function') {
@@ -545,31 +569,42 @@
     this.level = function(level) {
       // we check with "arguments.length" because "undefined" is a valid value
       if (arguments.length == 1) {
-        notDerived();
+        this._isNotDerived();
+        if (level == undefined && !this._parent) {
+          throw new Error("Cannot undefine root log level");
+        }
         this._level = toLevelNum(level);
       }
       return this._level;
     };
 
     this.addHandlers = function() {
-      notDerived();
+      this._isNotDerived();
       for (var i = 0; i < arguments.length; i++) {
         var handler = arguments[i];
-        this._handlers[handler._handlerId] = handler;
+        if ($.isArray(handler)) {
+          this.addHandlers.apply(this, handler);
+        } else {
+          this._handlers[handler._handlerId] = handler;
+        }
       }
     };
 
     this.removeHandlers = function() {
-      notDerived();
+      this._isNotDerived();
       for (var i = 0; i < arguments.length; i++) {
         var handler = arguments[i];
-        delete this._handlers[handler._handlerId];
+        if ($.isArray(handler)) {
+          this.removeHandlers.apply(this, handler);
+        } else {
+          delete this._handlers[handler._handlerId];
+        }
       }
     };
 
     this.handlers = function() {
       if (arguments.length != 0) {
-        notDerived();
+        this._isNotDerived();
         // set the list of handlers
         this._handlers = {};
         this.addHandlers.apply(this, arguments);
@@ -582,23 +617,23 @@
     };
 
     // Function to implement error(), info(), etc.
-    function levelNameFunction(levelNum) {
+    function namedLevelFunction(levelNum) {
       return function(message) {
         return this.log(levelNum, message);
       }
     }
 
     // Add functions for levels, (area.error(), area.info(), ...).
-    for (levelName in levels) {
+    for (var l in levels) {
       // Don't create off() function
-      if (levelName == 'Off') continue;
-      var functionName = levelName.toLowerCase();
-      var levelNum = levelNameToNum[levelName];
-      this[functionName] = levelNameFunction(levelNum);
+      if (l == 'Off') continue;
+      var functionName = l.toLowerCase();
+      var levelNum = levelNameToNum[l];
+      this[functionName] = namedLevelFunction(levelNum);
     }
 
     this.destroy = function() {
-      notDerived();
+      this._isNotDerived();
       for (var id in this._handlers) {
         var handler = this._handlers[id];
         if (handler.destroy) {
