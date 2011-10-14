@@ -21,6 +21,7 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   ~ THE SOFTWARE.
   -->
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
         "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -39,12 +40,12 @@
 
 <h3>Quick Start</h3>
 
-<p>Jog is a logging package for Javascript and JQuery, designed to be used for
-client-side application logging, analogous to Java packages such as log4j or
-java.util.logging. It allows you to separate your logs into various areas so
-you can turn on the logs of one area without seeing all the others, especially
-those of plugins or other packages you may be using. Using jog usually is as
-simple as this:</p>
+<p>Jog is a JavaScript/JQuery logging package for application logging, analogous
+   to Java packages such as log4j or java.util.logging. It allows you to
+   separate your logs into various areas so you can turn on the logs of one area
+   without seeing all the others, especially those of plugins or other packages
+   you may be using. Using jog usually is as simple as this:</p>
+
 <pre>$.jog('options').info('Reading user option settings');</pre>
 
 <p>This creates an informational-level log message for the "options" area of
@@ -172,7 +173,7 @@ to an area above it.</p>
 only as a threshold level. Therefore it is not a valid level for a log message.
 A log at the <code>Off</code> level is never shown.</p>
 
-<p>The object $.jog.levels has the levels -- and only the levels -- as its
+<p>The object $.jog.levels has the levels &mdash; and only the levels &mdash; as its
 properties. The level names are usually accessed through <code>$.jog</code>
 itself (<code>$.jog.Fine</code>) instead of this object
 (<code>$.jog.levels.Fine</code>) It is a way you can loop through the
@@ -381,7 +382,7 @@ specifically. For example, if you haven't set anything specific on the
 <code>'ui'</code> level, then <code>$.jog('ui').level()</code> will return an
 <code>undefined</code>. This means it will look to its parent to find out the
 threshold level. If you want to know the threshold that will be used at that
-level -- whether inherited or not -- you can use the <code>derived()</code>
+level &mdash; whether inherited or not &mdash; you can use the <code>derived()</code>
 method to get an area with all inherited data applied:</p>
 <pre>var derivedData = $.jog('ui').derived();</pre>
 
@@ -446,7 +447,7 @@ time, appropriately formatted.</p>
 
 <p>General API notes:</p>
 <ul>
-  <li>Area names are matched exactly -- case matters.</li>
+  <li>Area names are matched exactly &mdash; case matters.</li>
   <li>Levels can be passed as numbers, string versions of numbers, the name of
     the level, or any string whose first letter is the same as the first letter
     of a level (ignoring case). It can even be an object whose
@@ -628,26 +629,26 @@ time, appropriately formatted.</p>
 need to exist? None of the others had the ability to do two important things
 for real-world, durable, usable logging: areas and handlers.</p>
 
-<p>Areas let you split logging for one area of the code from another and
-control them independently This is critical for plugins or other shared code.
-Without areas, if someone using it wants to log their own stuff, they also see
-your log messages when they turn logging on. This gets much worse if they are
-using multiple plugins. So you need to strip your log statements as part of
-releasing your code, which defeats the purpose. Jog has areas so you can leave
-your log messages in place and they won't bother anyone else -- unless you ask
-them to turn it on to help debug a problem.</p>
+<p>Logging areas let you split logging for one part of your code from other parts and
+control them independently. This is critical for plugins and other shared code.
+Without areas, if someone uses logging for their own stuff, they also see
+your log messages. This gets much worse if they are
+using multiple plugins. So you need to strip log statements as part of
+releasing your code, which defeats the purpose. Jog has areas, so you can leave
+log messages in place and they won't bother anyone else &mdash; unless you ask
+them to turn it on to help debug a problem they've found.</p>
 
-<p>Handlers are important because plugins and applications and programmers
+<p>Handlers are important because plugins and programmers
 differ. Console log messages can be ugly and difficult to save, but are simple
 and don't interfere with your own page. HTML logs do interfere, but CSS can
 make it easier to see what's up, and you can search and save. Logs in a popup
-don't interfere and can handle multiple browser windows in one place, although
+don't interfere and can handle logs from multiple windows in one place, yet
 having another window can be a hassle. And alerts, well, you know how
-unpleasant they are -- and how necessary at times.</p>
+unpleasant they are &mdash; and how necessary at times.</p>
 
-<p>As you can see, depending on how you like to work (and others on the same
-project), and many other factors, being able to control how message are
-displayed is a powerful thing. And you can add a logger to send messages to
+<p>As you can see, depending on how you like to work and many other factors,
+   being able to control how message are
+displayed is a powerful thing. And beyond that, you can add a handle to send messages to
 your server, or one that uses Growl, or ...</p>
 
 <p>So that is why I found it worth the time to write this. I hope it helps you
