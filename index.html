@@ -1,0 +1,92 @@
+<!--
+  ~ The MIT License
+  ~
+  ~ Copyright (c) 2011 Ken Arnold
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in
+  ~ all copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  ~ THE SOFTWARE.
+  -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+    <title>jog</title>
+    <meta name="generator" content="Amaya, see http://www.w3.org/Amaya/">
+    <link rel="stylesheet" href="doc/jog.css" type="text/css">
+</head>
+
+<body>
+<p>Jog is a JavaScript/JQuery logging package for application logging, analogous
+   to Java packages such as log4j or java.util.logging. It allows you to
+   separate your logs into various areas so you can turn on the logs of one area
+   without seeing all the others, especially those of plugins or other packages
+   you may be using. Using jog usually is as simple as this:</p>
+
+<pre>$.jog('options').info('Reading user option settings');</pre>
+
+<p>This creates an informational-level log message for the "options" area of
+   your code to indicate you were, well, reading the user option settings.</p>
+
+<p><a href="src/jogDemo.html">Care to see it in action?</a></p>
+
+<p>There are several existing log packages for JQuery, so why does this one need
+   to exist? None of the others had the ability to do two important things for
+   real-world, durable, usable logging: areas and handlers.</p>
+
+<p>Logging areas let you split logging for one part of your code from other
+   parts and control them independently. This is critical for plugins and other
+   shared code. Without areas, if someone uses logging for their own stuff, they
+   also see your log messages. This gets much worse if they are using multiple
+   plugins. So you need to strip log statements as part of releasing your code,
+   which defeats the purpose. Jog has areas, so you can leave log messages in
+   place and they won't bother anyone else &mdash; unless you ask them to turn
+   it on to help debug a problem they've found.</p>
+
+<p>Handlers are important because plugins and programmers differ. Console log
+   messages can be ugly and difficult to save, but are simple and don't
+   interfere with your own page. HTML logs do interfere, but CSS can make it
+   easier to see what's up, and you can search and save. Logs in a popup don't
+   interfere and can handle logs from multiple windows in one place, yet having
+   another window can be a hassle. And alerts, well, you know how unpleasant
+   they are &mdash; and how necessary at times.</p>
+
+<p>As you can see, depending on how you like to work and many other factors,
+   being able to control how message are displayed is a powerful thing. And
+   beyond that, you can add a handle to send messages to your server, or one
+   that uses Growl, or ...</p>
+
+<p>So that is why I found it worth the time to write this. I hope it helps you
+   out.</p>
+
+<ul>
+    <li>You can <a href="src/jogDemo.html">play with a demo</a></li>
+    <li>You can <a href="doc/jog.html">read the documentation</a></li>
+    <li>You can <a
+            href="releases/jog1_0.zip">download the release: jog1_0.zip</a></li>
+    <li>You can <a
+            href="https://github.com/kcrca/jog">peruse the source at github</a>
+    </li>
+</ul>
+
+<p>Jog relies on the <a href="http://postmessage.freebaseapps.com">postmessage plugin</a>.
+Thanks to Daniel Park for making this useful tool available! (A copy of the plugin is
+included with this download for convenience.)
+</body>
+</html>
