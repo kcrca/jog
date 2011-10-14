@@ -331,7 +331,7 @@ var runTests = function() {
         }, message);
     });
 
-    test("derived method", function() {
+    test("derived areas", function() {
         initMocks();
         var root = $.jog();
         var area = $.jog('derived');
@@ -345,11 +345,38 @@ var runTests = function() {
         equals(root.level(), derived.level());
 
         deepEqual(area.handlers(), [h]);
-        equal(derived.handlers().length, defaultHandlers.length + 1);
+        var handlerCount = defaultHandlers.length + 1;
+        equal(derived.handlers().length, handlerCount);
 
+        // These are functions that should not be allowed on derived areas
+        raises(function() {
+            derived.useParentHandlers(true);
+        }, "should not allow setting useParentHandlers");
+        raises(function() {
+            derived.info("message");
+        }, "should not allow logging");
         raises(function() {
             derived.level(levels.Off);
         }, "should not allow setting level");
+        raises(function() {
+            derived.addHandlers({});
+        }, "should not allow adding handlers");
+        raises(function() {
+            derived.removeHandlers({});
+        }, "should not allow removing handlers");
+        raises(function() {
+            derived.handlers({});
+        }, "should not allow setting handlers");
+        raises(function() {
+            derived.destroy();
+        }, "should not allow destroying");
+
+        ok(derived.useParentHandlers(),
+                "should allow getting useParentHandlers");
+        ok(derived.info(), "should allow testing logging");
+        equal(derived.level(), levels.Info, "should allow getting level");
+        equal(derived.handlers().length, handlerCount,
+                "should allow getting handlers");
     });
 
     test("html handler", function() {
@@ -385,6 +412,15 @@ var runTests = function() {
         var expected = $('#ExpectedjogID-html');
         var actual = $('#jogID-html');
         domStrEqual(expected, actual, "generated HTML");
+    });
+
+    test("destroy", function() {
+        initMocks();
+        var h = newMockHandler("destroying");
+        $.jog().addHandlers(h);
+        ok(!h.destroyed, "initially destroyed");
+        $.jog.destroy();
+        ok(h.destroyed, "destroyed");
     });
 };
 

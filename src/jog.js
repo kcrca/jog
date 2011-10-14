@@ -503,15 +503,16 @@
     };
 
     this.derive = function() {
-      return this.doDerive(true);
+      if (this._isDerived) return this;
+      return this._doDerive(true);
     };
 
-    this.doDerive = function(returnCopy) {
+    this._doDerive = function(returnCopy) {
       // Build up the current settings for the area by extending values from
       // ancestors.
       if (!this._cache) {
         if (this._parent) {
-          this._cache = this._parent.doDerive(true);
+          this._cache = this._parent._doDerive(true);
         } else {
           this._cache = {};
         }
@@ -535,7 +536,7 @@
       // Special case, and not just for speed -- An Off shouldn't be shown
       if (levelNum == levels.Off) return false;
 
-      var derived = (this._isDerived ? this : this.doDerive(false));
+      var derived = (this._isDerived ? this : this._doDerive(false));
       if (levelNum < derived._level) return false;
 
       // Without a message, checking if a certain level would be logged
