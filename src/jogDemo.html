@@ -1,0 +1,211 @@
+<!--
+  ~ The MIT License
+  ~
+  ~ Copyright (c) 2011 Ken Arnold
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in
+  ~ all copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  ~ THE SOFTWARE.
+  -->
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Jog Demo</title>
+
+    <script type="text/javascript"
+            src="http://code.jquery.com/jquery-latest.js"></script>
+    <script type="text/javascript" src="postmessage.js"></script>
+    <script type="text/javascript" src="jquery.tooltip.js"></script>
+    <script type="text/javascript" src="jog.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="jquery.tooltip.css"/>
+    <link rel="stylesheet" type="text/css" href="jogHtml.css"/>
+    <style type="text/css">
+        input[type="button"] {
+            width: 100px;
+        }
+
+        table, tr, td {
+            vertical-align: baseline;
+        }
+    </style>
+</head>
+<body>
+
+<h3>Jog Demo</h3>
+
+<p> This simple demo allows you to fiddle around with the jog logging package, a
+    JQuery plugin for log messages. Just put in a log message and hit the "Log"
+    button to get started.
+</p>
+
+<hr>
+<form name="writeLog" action="#" onsubmit="noSubmit()">
+    <table align="center">
+        <tr>
+            <td colspan="2" style="padding-bottom: 3ex; padding-top: 3ex">
+                <label for="areaText">Area:</label>
+                <input type="text" id="areaText" value="demo"/>
+                <label for="levelSelect">Level:</label>
+                <select id="levelSelect">
+                    <option>undefined</option>
+                </select>
+                <label for="messageText">Message:</label>
+                <input type="text" id="messageText" size="50"
+                       value="Read <i>Me!</i>"/>
+                <input type="checkbox" id="byNameButton" class="testOnly"/>
+                <label for="byNameButton" class="testOnly">Use level-named
+                                                           methods
+                </label>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <div>
+                    <input type="button" id="logButton" value="Log"/>
+                    Log the message in the given area<br>
+                    <input type="button" id="levelButton" value="Level"/>
+                    Set the level for the area<br> 
+                    <span class="testOnly">
+                    <input type="button" id="destroyButton" value="Destroy"/>
+                    Destroy <kbd>$.jog</kbd><br>
+                    </span>
+                </div>
+            </td>
+            <td align="right">
+                <div>
+                    <table>
+                        <tr>
+                            <td>Handlers:</td>
+                            <td id='handlers'></td>
+                            <td id='handlerDescs'></td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+</form>
+
+<script type="text/javascript">
+function noSubmit() {
+    return false;
+}
+
+function createHandlerOptions() {
+    // Since this is an HTML page test, the HTML logger should be on
+    $.jog().addHandlers($.jog.knownHandlers.html);
+    var inUse = $.jog().handlers();
+    var handlers = $.jog.knownHandlers;
+    for (var handlerName in handlers) {
+        var handler = handlers[handlerName];
+
+        var checkbox = $('<input type="checkbox"/>');
+        var id = handlerName + 'Opt';
+        checkbox.attr('id', id);
+        checkbox.attr('name', handlerName);
+        checkbox.attr('checked', inUse.indexOf(handler) >= 0);
+        checkbox.change(handlerCheckboxChanged);
+
+        var label = $('<label/>').attr('for', id).text(handlerName);
+
+        function addTooltip(jq) {
+            jq.tooltip().attr('title', handler.description);
+        }
+
+        addTooltip(label);
+        addTooltip(checkbox);
+        $('#handlers').append(checkbox).append(label).append('<br>');
+    }
+}
+
+function handlerCheckboxChanged(evt) {
+    var checkbox = $(evt.target);
+    var name = checkbox.attr('name');
+    var handler = $.jog.knownHandlers[name];
+    if (checkbox.is(':checked')) {
+        $.jog().addHandlers(handler);
+    } else {
+        $.jog().removeHandlers(handler);
+    }
+}
+
+function createLevelSelect() {
+    var levelSelect = $('#levelSelect');
+    var defaults = $.jog();
+    var defaultLevelName = $.jog.levelName(defaults.level());
+    var levels = $.jog.levels;
+    for (var levelName in levels) {
+        var opt = $('<option>' + levelName + '</option>');
+        levelSelect.append(opt);
+        if (levelName == defaultLevelName) {
+            opt.attr('selected', 'selected');
+        }
+    }
+}
+
+function readLogLevel() {
+    return $('#levelSelect option:selected').val();
+}
+
+function readArea() {
+    return $('#areaText').val();
+}
+function doLog() {
+    var area = readArea();
+    var level = readLogLevel();
+    var message = $('#messageText').val();
+    if ($('#byNameButton').is(':checked')) {
+        var functionName = level.toLowerCase();
+        $.jog(area)[functionName](message);
+    } else {
+        $.jog(area).log(level, message);
+    }
+}
+
+function doDestroy() {
+    $.jog.destroy();
+}
+
+function doLevel() {
+    var area = $('#areaText').val();
+    var level = readLogLevel();
+    var message = $('#messageText').val();
+    $.jog(area).level(level);
+}
+
+$(document).ready(function() {
+    createHandlerOptions();
+    createLevelSelect();
+    $('#logButton').click(doLog);
+    $('#levelButton').click(doLevel);
+    $('#destroyButton').click(doDestroy);
+    $('.testOnly').hide();
+});
+</script>
+
+<hr id="before">
+<div id='jog-html' style='border: 10px solid lightBlue;'>
+</div>
+<hr id="after">
+
+</body>
+</html>

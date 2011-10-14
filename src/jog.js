@@ -112,7 +112,12 @@
     var scripts = document.getElementsByTagName('script'),
         script = scripts[scripts.length - 1];
 
-    return script.getAttribute('src', 2).replace(/\/+[^/]*\/*$/, '/');
+    var thisScript = script.getAttribute('src', 2);
+    var path = thisScript.replace(/\/+[^/]*\/*$/, '/');
+    if (path == thisScript) {
+      path = './';
+    }
+    return path;
     //this works in all browser even in FF/Chrome/Safari
   }());
 
@@ -131,6 +136,7 @@
         htmlId: undefined, // by default this is generated from idPrefix
         insertHtml: defaultInsertHtml
       },
+      description: "Log messages are put in HTML on the same page.",
       publish: function(area, levelNum, levelName, when, message) {
         this._ensureTable();
         var clsPrefix = this._settings.classPrefix;
@@ -234,6 +240,7 @@
         title: 'Log Messages',
         css: 'jog.css'
       },
+      description: "Log messages are put in HTML on a popup window.",
       publish: function(area, levelNum, levelName, when, message) {
         // The message record for sending logs to the popup window
         var logRecord = {
@@ -306,6 +313,7 @@
         prefix: '',
         separator: ' - '
       },
+      description: "Log messages are put on the JavaScript console.",
       publish: function(area, levelNum, levelName, when, message) {
         if (!this._levelMethod) {
           this._levelMethod = [];
@@ -334,6 +342,7 @@
       _settings: {
         level: levels.Alert
       },
+      description: "Log messages are put in alert() messages (default level is Alert).",
       publish: function(area, levelNum, levelName, when, message) {
         message = messageText(message);
         alert("Area: " + area + "\n" + "Level: " + levelName + "\n" + "When: " +
@@ -511,7 +520,7 @@
       if (!message) return true;
 
       notDerived();
-      
+
       // Resolve the message into a simple string so we do it exactly once
       if (typeof(message) == 'function') {
         message = message();
