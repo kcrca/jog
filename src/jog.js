@@ -448,47 +448,45 @@
       throw new Error("Empty area name not allowed");
     }
 
-    var self = this;
-
     this.name = name;
     this._handlers = {}; // the handlers set specifically on this area
     this._useParentHandlers = true;
     this._kids = {};
 
-    function isNotDerived(keepCache) {
-      if (self._isDerived) throw Error("Operation not allowed on derived area");
+    this._isNotDerived = function(keepCache) {
+      if (this._isDerived) throw Error("Operation not allowed on derived area");
       if (!keepCache) {
-        self._invalidateCache();
+        this._invalidateCache();
       }
-    }
+    };
 
     this.useParentHandlers = function(value) {
       if (value != undefined) {
-        isNotDerived();
+        this._isNotDerived();
         this._useParentHandlers = value;
       }
       return this._useParentHandlers;
     };
 
-    var parent;
 
     // Calculate this area's lineage. This sets the _lineage field to a series
     // of names, from the top down through this area. For example, for the area
     // "x.y.z", _lineage would have ["x", "x.y", "x.y.z"].
+    var self = this;
     (function() {
       if (name == '') {
-        parent = undefined;
+        delete self._parent;
         return;
       }
 
       var lastDot = name.lastIndexOf('.');
       if (lastDot < 0) {
-        parent = areaRoot;
+        self._parent = areaRoot;
       } else {
         var parentName = name.substring(0, lastDot);
-        parent = jog(parentName);
+        self._parent = jog(parentName);
       }
-      parent._addKid(self);
+      self._parent._addKid(self);
     })();
 
     this._addKid = function(kid) {
@@ -512,8 +510,8 @@
       // Build up the current settings for the area by extending values from
       // ancestors.
       if (!this._cache) {
-        if (parent) {
-          this._cache = parent.derive();
+        if (this._parent) {
+          this._cache = this._parent.doDerive(true);
         } else {
           this._cache = {};
         }
@@ -543,7 +541,7 @@
       // Without a message, checking if a certain level would be logged
       if (!message) return true;
 
-      isNotDerived(true);
+      this._isNotDerived(true);
 
       // Resolve the message into a simple string so we do it exactly once
       if (typeof(message) == 'function') {
@@ -569,8 +567,8 @@
     this.level = function(level) {
       // we check with "arguments.length" because "undefined" is a valid value
       if (arguments.length == 1) {
-        isNotDerived();
-        if (level == undefined && !parent) {
+        this._isNotDerived();
+        if (level == undefined && !this._parent) {
           throw new Error("Cannot undefine root log level");
         }
         this._level = toLevelNum(level);
@@ -579,7 +577,7 @@
     };
 
     this.addHandlers = function() {
-      isNotDerived();
+      this._isNotDerived();
       for (var i = 0; i < arguments.length; i++) {
         var handler = arguments[i];
         if ($.isArray(handler)) {
@@ -591,7 +589,7 @@
     };
 
     this.removeHandlers = function() {
-      isNotDerived();
+      this._isNotDerived();
       for (var i = 0; i < arguments.length; i++) {
         var handler = arguments[i];
         if ($.isArray(handler)) {
@@ -604,7 +602,7 @@
 
     this.handlers = function() {
       if (arguments.length != 0) {
-        isNotDerived();
+        this._isNotDerived();
         // set the list of handlers
         this._handlers = {};
         this.addHandlers.apply(this, arguments);
@@ -624,16 +622,16 @@
     }
 
     // Add functions for levels, (area.error(), area.info(), ...).
-    for (levelName in levels) {
+    for (var l in levels) {
       // Don't create off() function
-      if (levelName == 'Off') continue;
-      var functionName = levelName.toLowerCase();
-      var levelNum = levelNameToNum[levelName];
+      if (l == 'Off') continue;
+      var functionName = l.toLowerCase();
+      var levelNum = levelNameToNum[l];
       this[functionName] = namedLevelFunction(levelNum);
     }
 
     this.destroy = function() {
-      isNotDerived();
+      this._isNotDerived();
       for (var id in this._handlers) {
         var handler = this._handlers[id];
         if (handler.destroy) {

@@ -346,6 +346,10 @@ var runTests = function() {
 
         deepEqual(area.handlers(), [h]);
         equal(derived.handlers().length, defaultHandlers.length + 1);
+
+        raises(function() {
+            derived.level(levels.Off);
+        }, "should not allow setting level");
     });
 
     test("html handler", function() {
