@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+// Source hosted at https://github.com/kcrca/jog
 (function($) {
   $.jog = jog;
 
