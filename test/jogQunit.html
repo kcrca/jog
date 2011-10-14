@@ -37,7 +37,7 @@
             src="http://code.jquery.com/qunit/git/qunit.js"></script>
 
     <script type="text/javascript" src="../src/jog.js"></script>
-    <link rel="stylesheet" href="jogHtml.css" type="text/css"/>
+    <link rel="stylesheet" href="../src/jogHtml.css" type="text/css"/>
 </head>
 
 <script>
@@ -71,7 +71,7 @@ var runTests = function() {
             publish: function(area, levelNum, levelName, when, message) {
                 this.ensureSetup();
                 this.logHistory.push(
-                        [area, levelNum, levelName, when, message]);
+                        [area, levelNum, levelName, when, message, this.name]);
             },
             destroy: function() {
                 this.ensureSetup();
@@ -84,17 +84,16 @@ var runTests = function() {
             testLog: function(addLog, area, level, message, expectedMsg) {
                 expectedMsg = expectedMsg || message;
                 this.ensureSetup();
-                var oldLen = this.logHistory.length;
                 this.markCount();
                 $.jog(area).log(level, message);
-                var newLen = this.logHistory.length;
                 var checkMsg = ': ' + expectedMsg;
                 if (!addLog) {
                     this.checkChange(0, checkMsg);
                 } else {
-                    this.checkChange(1, checkMsg);
-                    if (newLen != oldLen + 1) return;
-                    var latest = this.logHistory[oldLen];
+                    if (!this.checkChange(1, checkMsg)) {
+                        return;
+                    }
+                    var latest = this.logHistory[this.logHistory.length - 1];
                     equal(area, latest[0], expectedMsg);
                     equal(level, latest[1], expectedMsg);
                     equal(expectedMsg, latest[4], expectedMsg);
@@ -108,14 +107,17 @@ var runTests = function() {
                 this.mark = this.logHistory.length;
             },
             checkChange: function(change, message) {
-                equal(this.mark + change, this.logHistory.length, message);
+                var expected = this.mark + change;
+                var actual = this.logHistory.length;
+                equal(expected, actual, message);
+                return expected == actual;
             },
             toString: function() {
                 var lines = [this._handlerId];
                 $.each(this.logHistory, function(index, value) {
                     lines.push(value.toString());
                 });
-                return lines.join('\n');
+                return lines.join('\n') + '\n';
             }
         });
         mockHandlers.push(handler);
@@ -126,7 +128,7 @@ var runTests = function() {
         mockHandlers = [];
 
         var rootArea = $.jog();
-        rootArea.handlers(knownHandlers.console);
+        rootArea.handlers(defaultHandlers);
         rootArea.level(levels.Info);
 
         timeSource = new TimeSource();
@@ -181,7 +183,7 @@ var runTests = function() {
 
         equals($.jog().level(), levels.Info, "root log filter");
 
-        var rootMsg = 'root log @ ' + $.jog.levelName(levels.Info);
+        var rootMsg = 'root filter @ ' + $.jog.levelName(levels.Info);
         for (var filterAt = levels.Fine; filterAt <= levels.Off; filterAt++) {
             area.level(filterAt);
 
@@ -238,7 +240,6 @@ var runTests = function() {
         areaXY.handlers(hXY);
 
         // verify settings
-        var handlers = area.handlers;
         deepEqual(area.handlers(), [h]);
         deepEqual(areaX.handlers(), [hX]);
         deepEqual(areaXY.handlers(), [hXY]);
@@ -293,7 +294,6 @@ var runTests = function() {
         areaXY.addHandlers(hX);
 
         // verify settings
-        handlers = area.handlers;
         equal(area.handlers().length, 1);
         equal(areaX.handlers().length, 2);
         equal(areaXY.handlers().length, 3);
@@ -345,7 +345,7 @@ var runTests = function() {
         equals(root.level(), derived.level());
 
         deepEqual(area.handlers(), [h]);
-        equal(derived.handlers().length, 2);
+        equal(derived.handlers().length, defaultHandlers.length + 1);
     });
 
     test("html handler", function() {
