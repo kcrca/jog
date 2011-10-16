@@ -21,7 +21,6 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   ~ THE SOFTWARE.
   -->
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
         "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -40,12 +39,11 @@
 
 <h3>Quick Start</h3>
 
-<p>Jog is a JavaScript/JQuery logging package for application logging, analogous
-   to Java packages such as log4j or java.util.logging. It allows you to
-   separate your logs into various areas so you can turn on the logs of one area
-   without seeing all the others, especially those of plugins or other packages
-   you may be using. Using jog usually is as simple as this:</p>
-
+<p>Jog is a JavaScript/JQuery logging package for application logging,
+analogous to Java packages such as log4j or java.util.logging. It allows you to
+separate your logs into various areas so you can turn on the logs of one area
+without seeing all the others, especially those of plugins or other packages
+you may be using. Using jog usually is as simple as this:</p>
 <pre>$.jog('options').info('Reading user option settings');</pre>
 
 <p>This creates an informational-level log message for the "options" area of
@@ -173,9 +171,9 @@ to an area above it.</p>
 only as a threshold level. Therefore it is not a valid level for a log message.
 A log at the <code>Off</code> level is never shown.</p>
 
-<p>The object $.jog.levels has the levels &mdash; and only the levels &mdash; as its
-properties. The level names are usually accessed through <code>$.jog</code>
-itself (<code>$.jog.Fine</code>) instead of this object
+<p>The object $.jog.levels has the levels &mdash; and only the levels &mdash;
+as its properties. The level names are usually accessed through
+<code>$.jog</code> itself (<code>$.jog.Fine</code>) instead of this object
 (<code>$.jog.levels.Fine</code>) It is a way you can loop through the
 levels:</p>
 <pre>for (var logLevel in $.jog.levels) { ... }</pre>
@@ -350,13 +348,16 @@ and their non-standard configurable values:</p>
           <dd>The title of the window. The default is <code>"Log
             Messages"</code>. </dd>
         <dt><code>css</code></dt>
-          <dd>The CSS to use for the page in the window. It can a path name of
-            a css file, in which case it will be used in a
-            <code>&lt;style&gt;</code> block in the window's header. Or it can
-            be a chunk of HTML itself, in which case it will replace that
-            <code>&lt;style&gt;</code> node in the header. The default is
-            <code>"jog.css"</code>, which is provided as a file with this
-            package. </dd>
+          <dd>The CSS to use for the page in the window. It can be a path name
+            of a css file, in which case it will be as the href in a CSS 
+            <code>&lt;link&gt;</code> tag in the window's header. But if it
+            starts with a '&lt;', it is a chunk of HTML (such as an inline
+            style block) that it will replace that <code>&lt;link&gt;</code>
+            node in the header. The default is <code>"jogPopup.css"</code>,
+            which is provided as a file with this package. </dd>
+        <dt><code>popupReady</code></dt>
+          <dd>If defined, this string will be passed to <code>eval()</code> in
+            the popup window after the popup is ready.</dd>
       </dl>
     </dd>
 </dl>
@@ -382,8 +383,9 @@ specifically. For example, if you haven't set anything specific on the
 <code>'ui'</code> level, then <code>$.jog('ui').level()</code> will return an
 <code>undefined</code>. This means it will look to its parent to find out the
 threshold level. If you want to know the threshold that will be used at that
-level &mdash; whether inherited or not &mdash; you can use the <code>derived()</code>
-method to get an area with all inherited data applied:</p>
+level &mdash; whether inherited or not &mdash; you can use the
+<code>derived()</code> method to get an area with all inherited data
+applied:</p>
 <pre>var derivedData = $.jog('ui').derived();</pre>
 
 <p>Then you can call <code>derivedData.level()</code> to find out the value
@@ -629,27 +631,27 @@ time, appropriately formatted.</p>
 need to exist? None of the others had the ability to do two important things
 for real-world, durable, usable logging: areas and handlers.</p>
 
-<p>Logging areas let you split logging for one part of your code from other parts and
-control them independently. This is critical for plugins and other shared code.
-Without areas, if someone uses logging for their own stuff, they also see
-your log messages. This gets much worse if they are
-using multiple plugins. So you need to strip log statements as part of
-releasing your code, which defeats the purpose. Jog has areas, so you can leave
-log messages in place and they won't bother anyone else &mdash; unless you ask
-them to turn it on to help debug a problem they've found.</p>
+<p>Logging areas let you split logging for one part of your code from other
+parts and control them independently. This is critical for plugins and other
+shared code. Without areas, if someone uses logging for their own stuff, they
+also see your log messages. This gets much worse if they are using multiple
+plugins. So you need to strip log statements as part of releasing your code,
+which defeats the purpose. Jog has areas, so you can leave log messages in
+place and they won't bother anyone else &mdash; unless you ask them to turn it
+on to help debug a problem they've found.</p>
 
-<p>Handlers are important because plugins and programmers
-differ. Console log messages can be ugly and difficult to save, but are simple
-and don't interfere with your own page. HTML logs do interfere, but CSS can
-make it easier to see what's up, and you can search and save. Logs in a popup
-don't interfere and can handle logs from multiple windows in one place, yet
-having another window can be a hassle. And alerts, well, you know how
-unpleasant they are &mdash; and how necessary at times.</p>
+<p>Handlers are important because plugins and programmers differ. Console log
+messages can be ugly and difficult to save, but are simple and don't interfere
+with your own page. HTML logs do interfere, but CSS can make it easier to see
+what's up, and you can search and save. Logs in a popup don't interfere and can
+handle logs from multiple windows in one place, yet having another window can
+be a hassle. And alerts, well, you know how unpleasant they are &mdash; and how
+necessary at times.</p>
 
 <p>As you can see, depending on how you like to work and many other factors,
-   being able to control how message are
-displayed is a powerful thing. And beyond that, you can add a handle to send messages to
-your server, or one that uses Growl, or ...</p>
+being able to control how message are displayed is a powerful thing. And beyond
+that, you can add a handle to send messages to your server, or one that uses
+Growl, or ...</p>
 
 <p>So that is why I found it worth the time to write this. I hope it helps you
 out.</p>

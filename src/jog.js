@@ -88,7 +88,9 @@
     this.level = function(level) {
       if (level != undefined) this._settings.level = level;
       return this._settings.level;
-    }
+    };
+    
+    this.copyCleanup = undefined;
   }
 
   function newHandler(name, properties) {
@@ -239,7 +241,8 @@
     popup: newHandler("popup", {
       _settings: {
         title: 'Log Messages',
-        css: 'jog.css'
+        css: 'jog.css',
+        popupReady: undefined
       },
       description: "Log messages are put in HTML on a popup window.",
       publish: function(area, levelNum, levelName, when, message) {

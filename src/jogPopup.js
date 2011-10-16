@@ -31,12 +31,23 @@ $(document).ready(function() {
 });
 
 function handleLogOptions(data) {
+  var firstTime = false;
+  if (!_settings) {
+    firstTime = true;
+    _settings = {};
+  }
+
   var merged = $.extend({}, _settings, data.settings);
   for (var key in merged) {
     if (_settings[key] != merged[key]) {
       updateSetting(data.settings, key);
     }
   }
+
+  if (firstTime && _settings.popupReady) {
+    eval(_settings.popupReady);
+  }
+
   // store a copy of the settings
   _settings = merged;
 }
@@ -55,11 +66,13 @@ function updateSetting(key, newSettings) {
 
   case 'css':
     var logCss = $('#jog-css');
-    var css = newSettings.css;
-    if (css.charAt(0) == '<') {
-      logCss.replaceWith($(css));
-    } else {
-      logCss.attr('href', css);
+    var newElement = logCss.length == 0;
+    if (newElement) {
+      logCss = $('<link id="jog-css" rel="stylesheet" type="txt/css"');
+    }
+    logCss.attr('href', newSettings.css);
+    if (newElement) {
+      $('head').append(logCss);
     }
   }
 }

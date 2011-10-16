@@ -63,3 +63,7 @@ td {
 	padding: 0.5ex 0.5em;
 	vertical-align: baseline;
 }
+
+body > dl > dt {
+	margin-top: 1ex;
+}
